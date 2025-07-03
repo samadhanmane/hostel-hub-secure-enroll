@@ -61,15 +61,15 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-hostel-primary-light via-background to-hostel-primary-light flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 bg-hostel-primary rounded-xl flex items-center justify-center">
-              <Shield className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 bg-primary text-primary-foreground rounded-xl flex items-center justify-center">
+              <Shield className="w-6 h-6" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-hostel-primary">Hostel Hub</CardTitle>
+          <CardTitle className="text-2xl font-bold">Hostel Hub</CardTitle>
           <CardDescription>Secure Enrollment Portal</CardDescription>
         </CardHeader>
         
@@ -104,7 +104,7 @@ const LoginForm = () => {
                 </div>
                 <Button 
                   type="submit" 
-                  className="w-full bg-hostel-primary hover:bg-hostel-primary/90"
+                  className="w-full"
                   disabled={isLoading}
                 >
                   {isLoading ? "Accessing..." : "Access Enrollment Form"}
@@ -140,7 +140,7 @@ const LoginForm = () => {
                 </div>
                 <Button 
                   type="submit" 
-                  className="w-full bg-hostel-primary hover:bg-hostel-primary/90"
+                  className="w-full"
                   disabled={isLoading}
                 >
                   {isLoading ? "Signing In..." : "Sign In as Admin"}

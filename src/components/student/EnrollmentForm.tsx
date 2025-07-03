@@ -194,7 +194,7 @@ const EnrollmentForm = () => {
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <Card className="shadow-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-hostel-primary flex items-center justify-center space-x-2">
+          <CardTitle className="text-2xl font-bold flex items-center justify-center space-x-2">
             <GraduationCap className="w-6 h-6" />
             <span>Hostel Enrollment Form</span>
           </CardTitle>
@@ -205,7 +205,7 @@ const EnrollmentForm = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Personal Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-hostel-primary flex items-center space-x-2">
+              <h3 className="text-lg font-semibold flex items-center space-x-2">
                 <User className="w-5 h-5" />
                 <span>Personal Information</span>
               </h3>
@@ -264,7 +264,7 @@ const EnrollmentForm = () => {
 
             {/* Academic Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-hostel-primary flex items-center space-x-2">
+              <h3 className="text-lg font-semibold flex items-center space-x-2">
                 <Building className="w-5 h-5" />
                 <span>Academic Information</span>
               </h3>
@@ -346,7 +346,7 @@ const EnrollmentForm = () => {
 
             {/* Hostel Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-hostel-primary flex items-center space-x-2">
+              <h3 className="text-lg font-semibold flex items-center space-x-2">
                 <Bed className="w-5 h-5" />
                 <span>Hostel Information</span>
               </h3>
@@ -413,9 +413,9 @@ const EnrollmentForm = () => {
             {generatedStudentId && (
               <>
                 <Separator />
-                <div className="text-center p-4 bg-hostel-primary-light rounded-lg">
-                  <Label className="text-sm font-medium text-hostel-primary">Generated Student ID</Label>
-                  <div className="text-2xl font-bold text-hostel-primary mt-1">{generatedStudentId}</div>
+                <div className="text-center p-4 bg-muted rounded-lg">
+                  <Label className="text-sm font-medium">Generated Student ID</Label>
+                  <div className="text-2xl font-bold mt-1">{generatedStudentId}</div>
                 </div>
               </>
             )}
@@ -425,7 +425,7 @@ const EnrollmentForm = () => {
               <>
                 <Separator />
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-hostel-primary">Fee Details</h3>
+                  <h3 className="text-lg font-semibold">Fee Details</h3>
                   <div className="bg-muted p-4 rounded-lg space-y-2">
                     <div className="flex justify-between">
                       <span>Base Fee:</span>
@@ -440,10 +440,10 @@ const EnrollmentForm = () => {
                     <Separator />
                     <div className="flex justify-between text-lg font-bold">
                       <span>Total Fee:</span>
-                      <span className="text-hostel-success">{formatCurrency(feeDetails.totalFee)}</span>
+                      <span className="text-accent-foreground">{formatCurrency(feeDetails.totalFee)}</span>
                     </div>
                     {feeDetails.canSplitPayment && (
-                      <div className="mt-4 p-3 bg-hostel-success/10 rounded-lg">
+                      <div className="mt-4 p-3 bg-accent/10 rounded-lg">
                         <Badge variant="outline" className="mb-2">Split Payment Available</Badge>
                         <div className="text-sm">
                           <div>Installment Amount: <span className="font-semibold">{formatCurrency(feeDetails.installmentAmount)}</span></div>
@@ -458,7 +458,7 @@ const EnrollmentForm = () => {
 
             <Button 
               type="submit" 
-              className="w-full bg-hostel-primary hover:bg-hostel-primary/90 text-white py-6 text-lg"
+              className="w-full py-6 text-lg"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Processing Enrollment..." : "Proceed to Payment"}
