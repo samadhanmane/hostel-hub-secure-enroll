@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 
 interface FeeStructure {
   id: string;
+  hostelId: string;
   roomType: string;
   hostelYear: string;
   caste: string;
@@ -31,6 +32,7 @@ const FeeManagement = () => {
   const [feeStructures, setFeeStructures] = useState<FeeStructure[]>([
     {
       id: '1',
+      hostelId: '1',
       roomType: '2-sharing',
       hostelYear: '2025-2026',
       caste: 'General',
@@ -40,6 +42,7 @@ const FeeManagement = () => {
     },
     {
       id: '2',
+      hostelId: '1',
       roomType: '3-sharing',
       hostelYear: '2025-2026',
       caste: 'General',
@@ -51,6 +54,7 @@ const FeeManagement = () => {
 
   const [splitAccess, setSplitAccess] = useState<SplitPaymentAccess[]>([]);
   const [newFee, setNewFee] = useState({
+    hostelId: '',
     roomType: '',
     hostelYear: '',
     caste: '',
@@ -66,16 +70,22 @@ const FeeManagement = () => {
   const [isAddingSplit, setIsAddingSplit] = useState(false);
   const { toast } = useToast();
 
+  const hostels = [
+    { id: '1', name: 'MITAOE Boys Hostel-A' },
+    { id: '2', name: 'MITAOE Girls Hostel-A' },
+    { id: '3', name: 'PIT Boys Hostel-B' },
+  ];
   const roomTypes = ['2-sharing', '3-sharing'];
   const hostelYears = ['2025-2026', '2026-2027', '2027-2028'];
   const castes = ['General', 'OBC', 'SC', 'ST', 'EWS'];
 
   const handleAddFeeStructure = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newFee.roomType || !newFee.hostelYear || !newFee.caste) return;
+    if (!newFee.hostelId || !newFee.roomType || !newFee.hostelYear || !newFee.caste) return;
 
     const fee: FeeStructure = {
       id: Date.now().toString(),
+      hostelId: newFee.hostelId,
       roomType: newFee.roomType,
       hostelYear: newFee.hostelYear,
       caste: newFee.caste,
@@ -86,6 +96,7 @@ const FeeManagement = () => {
 
     setFeeStructures([...feeStructures, fee]);
     setNewFee({
+      hostelId: '',
       roomType: '',
       hostelYear: '',
       caste: '',
@@ -131,6 +142,10 @@ const FeeManagement = () => {
     ));
   };
 
+  const getHostelName = (hostelId: string) => {
+    return hostels.find(h => h.id === hostelId)?.name || 'Unknown Hostel';
+  };
+
   return (
     <div className="space-y-6">
       {/* Fee Structures */}
@@ -140,21 +155,33 @@ const FeeManagement = () => {
             <span>Fee Structure Management</span>
             <Button 
               onClick={() => setIsAddingFee(!isAddingFee)}
-              className="bg-hostel-primary hover:bg-hostel-primary/90"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Fee Structure
             </Button>
           </CardTitle>
           <CardDescription>
-            Configure fees for different room types, years, and categories
+            Configure fees for different hostels, room types, years, and categories
           </CardDescription>
         </CardHeader>
         
         <CardContent>
           {isAddingFee && (
             <form onSubmit={handleAddFeeStructure} className="mb-6 p-4 border rounded-lg space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <Label htmlFor="hostel">Hostel Name</Label>
+                  <Select value={newFee.hostelId} onValueChange={(value) => setNewFee({...newFee, hostelId: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select hostel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hostels.map(hostel => (
+                        <SelectItem key={hostel.id} value={hostel.id}>{hostel.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div>
                   <Label htmlFor="room-type">Room Type</Label>
                   <Select value={newFee.roomType} onValueChange={(value) => setNewFee({...newFee, roomType: value})}>
@@ -231,7 +258,7 @@ const FeeManagement = () => {
                 </div>
               </div>
               <div className="flex space-x-2">
-                <Button type="submit" className="bg-hostel-success hover:bg-hostel-success/90">
+                <Button type="submit">
                   Add Fee Structure
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setIsAddingFee(false)}>
@@ -245,6 +272,7 @@ const FeeManagement = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Hostel Name</TableHead>
                   <TableHead>Room Type</TableHead>
                   <TableHead>Hostel Year</TableHead>
                   <TableHead>Category</TableHead>
@@ -257,7 +285,8 @@ const FeeManagement = () => {
               <TableBody>
                 {feeStructures.map((fee) => (
                   <TableRow key={fee.id}>
-                    <TableCell className="font-medium">{fee.roomType}</TableCell>
+                    <TableCell className="font-medium">{getHostelName(fee.hostelId)}</TableCell>
+                    <TableCell>{fee.roomType}</TableCell>
                     <TableCell>{fee.hostelYear}</TableCell>
                     <TableCell>{fee.caste}</TableCell>
                     <TableCell>{formatCurrency(fee.newStudentFee)}</TableCell>
@@ -268,7 +297,7 @@ const FeeManagement = () => {
                         <Button variant="ghost" size="sm">
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-hostel-danger hover:text-hostel-danger">
+                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -288,7 +317,6 @@ const FeeManagement = () => {
             <span>Split Payment Access</span>
             <Button 
               onClick={() => setIsAddingSplit(!isAddingSplit)}
-              className="bg-hostel-success hover:bg-hostel-success/90"
             >
               <Users className="w-4 h-4 mr-2" />
               Grant Access
@@ -329,7 +357,7 @@ const FeeManagement = () => {
                 </div>
               </div>
               <div className="flex space-x-2">
-                <Button type="submit" className="bg-hostel-success hover:bg-hostel-success/90">
+                <Button type="submit">
                   Grant Access
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setIsAddingSplit(false)}>
@@ -357,7 +385,7 @@ const FeeManagement = () => {
                       <TableCell>{access.installments}</TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 rounded-full text-xs ${
-                          access.isActive ? 'bg-hostel-success text-white' : 'bg-gray-200 text-gray-600'
+                          access.isActive ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'
                         }`}>
                           {access.isActive ? 'Active' : 'Inactive'}
                         </span>

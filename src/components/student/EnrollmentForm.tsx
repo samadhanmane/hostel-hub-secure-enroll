@@ -93,8 +93,9 @@ const EnrollmentForm = () => {
 
   // Calculate fees when relevant fields change
   useEffect(() => {
-    if (formData.roomType && formData.hostelYear && formData.caste && formData.studentType) {
+    if (formData.hostelId && formData.roomType && formData.hostelYear && formData.caste && formData.studentType) {
       const calculation = calculateFee(
+        formData.hostelId,
         formData.roomType,
         formData.hostelYear,
         formData.caste,
@@ -112,7 +113,7 @@ const EnrollmentForm = () => {
         installments: calculation.installments
       });
     }
-  }, [formData.roomType, formData.hostelYear, formData.caste, formData.studentType, formData.email]);
+  }, [formData.hostelId, formData.roomType, formData.hostelYear, formData.caste, formData.studentType, formData.email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

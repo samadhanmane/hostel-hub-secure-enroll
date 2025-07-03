@@ -40,6 +40,7 @@ export interface RoomType {
 
 export interface FeeStructure {
   id: string;
+  hostelId: string;
   roomTypeId: string;
   hostelYear: string;
   caste: string;

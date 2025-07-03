@@ -10,6 +10,7 @@ export interface FeeCalculation {
 }
 
 export const calculateFee = (
+  hostelId: string,
   roomType: string,
   hostelYear: string,
   caste: string,
@@ -19,7 +20,8 @@ export const calculateFee = (
 ): FeeCalculation => {
   // Find matching fee structure
   const feeStructure = feeStructures.find(
-    fs => fs.roomTypeId === roomType && 
+    fs => fs.hostelId === hostelId &&
+         fs.roomTypeId === roomType && 
          fs.hostelYear === hostelYear && 
          fs.caste === caste
   );
