@@ -52,6 +52,14 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				// Custom hostel system colors
+				hostel: {
+					primary: 'hsl(var(--hostel-primary))',
+					'primary-light': 'hsl(var(--hostel-primary-light))',
+					success: 'hsl(var(--hostel-success))',
+					warning: 'hsl(var(--hostel-warning))',
+					danger: 'hsl(var(--hostel-danger))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
