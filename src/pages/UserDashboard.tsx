@@ -5,10 +5,11 @@ import axios from 'axios';
 const UserDashboard = () => {
   const { user } = useAuth();
   const [studentId, setStudentId] = useState<string | null>(null);
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
     if (user?.email) {
-      axios.get(`/api/auth/student/by-email?email=${encodeURIComponent(user.email)}`)
+      axios.get(`${BACKEND_URL}/api/auth/student/by-email?email=${encodeURIComponent(user.email)}`)
         .then(res => setStudentId(res.data.studentId))
         .catch(() => setStudentId(null));
     }

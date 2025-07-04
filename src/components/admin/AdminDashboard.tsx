@@ -9,6 +9,8 @@ import FeeManagement from "./FeeManagement";
 import StudentsView from "./StudentsView";
 import AdminSettings from "./AdminSettings";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
     totalStudents: 0,
@@ -24,7 +26,7 @@ const AdminDashboard = () => {
       setLoading(true);
       setError("");
       try {
-        const res = await fetch("/api/admin/dashboard-stats", {
+        const res = await fetch(`${BACKEND_URL}/api/admin/dashboard-stats`, {
           credentials: "include"
         });
         if (!res.ok) throw new Error("Failed to fetch stats");

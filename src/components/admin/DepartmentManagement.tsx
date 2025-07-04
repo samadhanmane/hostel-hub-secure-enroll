@@ -8,6 +8,8 @@ import { Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
 const DepartmentManagement = () => {
   const [departments, setDepartments] = useState<any[]>([]);
   const [newDepartment, setNewDepartment] = useState({ name: "" });
@@ -17,7 +19,7 @@ const DepartmentManagement = () => {
   // Fetch departments from backend
   const fetchDepartments = async () => {
     try {
-      const res = await axios.get("/api/dropdowns/departments");
+      const res = await axios.get(`${BACKEND_URL}/api/dropdowns/departments`);
       setDepartments(res.data);
     } catch (err) {
       toast({ title: "Error", description: "Failed to fetch departments.", variant: "destructive" });
@@ -30,7 +32,7 @@ const DepartmentManagement = () => {
     e.preventDefault();
     if (!newDepartment.name) return;
     try {
-      await axios.post("/api/admin/department", { name: newDepartment.name });
+      await axios.post(`${BACKEND_URL}/api/admin/department`, { name: newDepartment.name });
       toast({ title: "Department Added", description: `${newDepartment.name} has been added successfully.` });
       setNewDepartment({ name: "" });
       setIsAdding(false);
@@ -43,7 +45,7 @@ const DepartmentManagement = () => {
   const handleDeleteDepartment = async (id: string) => {
     if (!window.confirm("Delete this department?")) return;
     try {
-      await axios.delete(`/api/admin/department/${id}`);
+      await axios.delete(`${BACKEND_URL}/api/admin/department/${id}`);
       toast({ title: "Department Removed", description: "Department has been removed successfully." });
       fetchDepartments();
     } catch (err: any) {

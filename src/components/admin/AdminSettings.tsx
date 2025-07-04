@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import axios from "axios";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
 const AdminSettings = () => {
   const [settings, setSettings] = useState({
     academicYears: ['First Year', 'Second Year', 'Third Year', 'Fourth Year'],
@@ -23,13 +25,13 @@ const AdminSettings = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    axios.get("/api/admin/settings").then(res => setSettings(res.data)).catch(() => {});
+    axios.get(`${BACKEND_URL}/api/admin/settings`).then(res => setSettings(res.data)).catch(() => {});
   }, []);
 
   const saveSettings = async (updatedSettings: typeof settings, onSuccess?: () => void) => {
     setIsSaving(true);
     try {
-      await axios.post("/api/admin/settings", updatedSettings);
+      await axios.post(`${BACKEND_URL}/api/admin/settings`, updatedSettings);
       setSettings(updatedSettings);
       toast({ title: "Settings Saved", description: "Settings have been updated successfully." });
       if (onSuccess) onSuccess();

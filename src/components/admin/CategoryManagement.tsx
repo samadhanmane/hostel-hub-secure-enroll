@@ -8,6 +8,8 @@ import { Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
 const CategoryManagement = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [newCategory, setNewCategory] = useState({ name: "" });
@@ -17,7 +19,7 @@ const CategoryManagement = () => {
   // Fetch categories from backend
   const fetchCategories = async () => {
     try {
-      const res = await axios.get("/api/dropdowns/categories");
+      const res = await axios.get(`${BACKEND_URL}/api/dropdowns/categories`);
       setCategories(res.data);
     } catch (err) {
       toast({ title: "Error", description: "Failed to fetch categories.", variant: "destructive" });
@@ -30,7 +32,7 @@ const CategoryManagement = () => {
     e.preventDefault();
     if (!newCategory.name) return;
     try {
-      await axios.post("/api/admin/category", { name: newCategory.name });
+      await axios.post(`${BACKEND_URL}/api/admin/category`, { name: newCategory.name });
       toast({ title: "Category Added", description: `${newCategory.name} has been added successfully.` });
       setNewCategory({ name: "" });
       setIsAdding(false);
@@ -43,7 +45,7 @@ const CategoryManagement = () => {
   const handleDeleteCategory = async (id: string) => {
     if (!window.confirm("Delete this category?")) return;
     try {
-      await axios.delete(`/api/admin/category/${id}`);
+      await axios.delete(`${BACKEND_URL}/api/admin/category/${id}`);
       toast({ title: "Category Removed", description: "Category has been removed successfully." });
       fetchCategories();
     } catch (err: any) {

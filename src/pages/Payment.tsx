@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Dialog } from '@/components/ui/dialog';
 
 const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || 'YOUR_RAZORPAY_KEY_ID';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const Payment = () => {
   const location = useLocation();
@@ -25,7 +26,7 @@ const Payment = () => {
   useEffect(() => {
     // Always fetch split eligibility fresh when user or formData changes
     if (user?.email || user?.studentId || formData.email || formData.studentId) {
-      axios.post('/api/fee/split-eligibility', {
+      axios.post(`${BACKEND_URL}/api/fee/split-eligibility`, {
         email: formData.email || user?.email,
         studentId: formData.studentId || user?.studentId,
       }).then(res => {
@@ -37,7 +38,7 @@ const Payment = () => {
     }
     // Fetch remaining fee for the selected structure
     if (user?.studentId || user?.email) {
-      axios.get('/api/fee/remaining-fee', {
+      axios.get(`${BACKEND_URL}/api/fee/remaining-fee`, {
         params: {
           studentId: user?.studentId,
           email: user?.email,
@@ -51,7 +52,7 @@ const Payment = () => {
     }
     // Fetch payment history to determine installment status
     if (user?.studentId || user?.email) {
-      axios.get('/api/fee/payment-history', {
+      axios.get(`${BACKEND_URL}/api/fee/payment-history`, {
         params: { studentId: user?.studentId, email: user?.email },
       }).then(res => {
         // Only consider payments for the current structure
@@ -114,7 +115,7 @@ const Payment = () => {
       };
       console.log('Sending to /api/fee/pay:', payload);
       // 1. Create Razorpay order
-      const orderRes = await axios.post('/api/fee/create-order', {
+      const orderRes = await axios.post(`${BACKEND_URL}/api/fee/create-order`, {
         amount: totalToPay,
         receipt: `rcpt_${user.email}_${Date.now()}`
       });
@@ -132,7 +133,7 @@ const Payment = () => {
           // 3. On payment success, call backend to record payment
           try {
             payload.razorpayPaymentId = response.razorpay_payment_id;
-            const res = await axios.post('/api/fee/pay', payload);
+            const res = await axios.post(`${BACKEND_URL}/api/fee/pay`, payload);
             if (res.data.studentId) {
               localStorage.setItem('studentId', res.data.studentId);
             }
@@ -178,7 +179,7 @@ const Payment = () => {
     setShowHistory(true);
     setLoadingHistory(true);
     try {
-      const res = await axios.get('/api/fee/payment-history', {
+      const res = await axios.get(`${BACKEND_URL}/api/fee/payment-history`, {
         params: { studentId: user?.studentId, email: user?.email },
       });
       setHistory(res.data);

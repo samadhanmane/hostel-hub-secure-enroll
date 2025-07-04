@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useNavigate } from 'react-router-dom';
 
 const VITE_RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID;
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const EnrollmentForm = () => {
   const { user } = useAuth();
@@ -120,21 +121,21 @@ const EnrollmentForm = () => {
   useEffect(() => {
     if (user?.email) {
       // Fetch student record by email
-      axios.get(`/api/auth/student/by-email?email=${encodeURIComponent(user.email)}`)
+      axios.get(`${BACKEND_URL}/api/auth/student/by-email?email=${encodeURIComponent(user.email)}`)
         .then(res => setExistingStudent(res.data))
         .catch(() => setExistingStudent(null));
     }
   }, [user?.email]);
 
   useEffect(() => {
-    axios.get('/api/dropdowns/colleges').then(res => setColleges(res.data)).catch(() => setColleges([]));
-    axios.get('/api/dropdowns/hostels').then(res => setHostels(res.data)).catch(() => setHostels([]));
-    axios.get('/api/dropdowns/room-types').then(res => setRoomTypes(res.data)).catch(() => setRoomTypes([]));
-    axios.get('/api/dropdowns/categories').then(res => setCategories(res.data)).catch(() => setCategories([]));
-    axios.get('/api/dropdowns/years').then(res => setYears(res.data)).catch(() => setYears([]));
-    axios.get('/api/dropdowns/departments').then(res => setDepartments(res.data)).catch(() => setDepartments([]));
-    axios.get('/api/admin/fees').then(res => setFees(res.data)).catch(() => setFees([]));
-    axios.get('/api/admin/settings').then(res => setSettings(res.data)).catch(() => setSettings({
+    axios.get(`${BACKEND_URL}/api/dropdowns/colleges`).then(res => setColleges(res.data)).catch(() => setColleges([]));
+    axios.get(`${BACKEND_URL}/api/dropdowns/hostels`).then(res => setHostels(res.data)).catch(() => setHostels([]));
+    axios.get(`${BACKEND_URL}/api/dropdowns/room-types`).then(res => setRoomTypes(res.data)).catch(() => setRoomTypes([]));
+    axios.get(`${BACKEND_URL}/api/dropdowns/categories`).then(res => setCategories(res.data)).catch(() => setCategories([]));
+    axios.get(`${BACKEND_URL}/api/dropdowns/years`).then(res => setYears(res.data)).catch(() => setYears([]));
+    axios.get(`${BACKEND_URL}/api/dropdowns/departments`).then(res => setDepartments(res.data)).catch(() => setDepartments([]));
+    axios.get(`${BACKEND_URL}/api/admin/fees`).then(res => setFees(res.data)).catch(() => setFees([]));
+    axios.get(`${BACKEND_URL}/api/admin/settings`).then(res => setSettings(res.data)).catch(() => setSettings({
       academicYears: [],
       admissionYears: [],
       branches: [],
@@ -147,7 +148,7 @@ const EnrollmentForm = () => {
 
   // Refetch fees from backend every time a key selection changes
   useEffect(() => {
-    axios.get("/api/admin/fees").then(res => setFees(res.data)).catch(() => setFees([]));
+    axios.get(`${BACKEND_URL}/api/admin/fees`).then(res => setFees(res.data)).catch(() => setFees([]));
   }, [formData.hostelId, formData.roomType, formData.hostelYear, formData.caste, formData.studentType]);
 
   useEffect(() => {

@@ -8,6 +8,8 @@ import { Plus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
 const CollegeManagement = () => {
   const [colleges, setColleges] = useState<any[]>([]);
   const [newCollege, setNewCollege] = useState({ name: "" });
@@ -17,7 +19,7 @@ const CollegeManagement = () => {
   // Fetch colleges from backend
   const fetchColleges = async () => {
     try {
-      const res = await axios.get("/api/dropdowns/colleges");
+      const res = await axios.get(`${BACKEND_URL}/api/dropdowns/colleges`);
       setColleges(res.data);
     } catch (err) {
       toast({ title: "Error", description: "Failed to fetch colleges.", variant: "destructive" });
@@ -30,7 +32,7 @@ const CollegeManagement = () => {
     e.preventDefault();
     if (!newCollege.name) return;
     try {
-      await axios.post("/api/admin/college", { name: newCollege.name });
+      await axios.post(`${BACKEND_URL}/api/admin/college`, { name: newCollege.name });
       toast({ title: "College Added", description: `${newCollege.name} has been added successfully.` });
       setNewCollege({ name: "" });
       setIsAdding(false);
@@ -43,7 +45,7 @@ const CollegeManagement = () => {
   const handleDeleteCollege = async (id: string) => {
     if (!window.confirm("Delete this college?")) return;
     try {
-      await axios.delete(`/api/admin/college/${id}`);
+      await axios.delete(`${BACKEND_URL}/api/admin/college/${id}`);
       toast({ title: "College Removed", description: "College has been removed successfully." });
       fetchColleges();
     } catch (err: any) {

@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import axios from "axios";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
 const StudentsView = () => {
   const [students, setStudents] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -20,7 +22,7 @@ const StudentsView = () => {
 
   useEffect(() => {
     // Load students from backend
-    axios.get('/api/admin/users').then(res => {
+    axios.get(`${BACKEND_URL}/api/admin/users`).then(res => {
       setStudents(res.data);
       setFilteredStudents(res.data);
     });
@@ -40,14 +42,14 @@ const StudentsView = () => {
     setSelectedStudent(student);
     setIsViewModalOpen(true);
     // Fetch payments for this student
-    const res = await axios.get(`/api/admin/payments?studentId=${student.studentId}`);
+    const res = await axios.get(`${BACKEND_URL}/api/admin/payments?studentId=${student.studentId}`);
     setPayments(res.data);
   };
 
   const handleDelete = async (student: any) => {
     if (!window.confirm(`Delete student ${student.name} (${student.studentId})?`)) return;
     try {
-      await axios.delete(`/api/admin/users/${student.studentId}`);
+      await axios.delete(`${BACKEND_URL}/api/admin/users/${student.studentId}`);
       setStudents((prev) => prev.filter((s) => s.studentId !== student.studentId));
       setFilteredStudents((prev) => prev.filter((s) => s.studentId !== student.studentId));
     } catch (err) {

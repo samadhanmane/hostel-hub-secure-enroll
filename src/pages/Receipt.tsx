@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 const Receipt = () => {
   const location = useLocation();
   const data = location.state || {};
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
   if (!data.paymentId) return <div>No payment found.</div>;
 
@@ -25,7 +26,7 @@ const Receipt = () => {
       <div className="mb-2">Date: {new Date().toLocaleDateString()}</div>
       <a
         className="bg-green-600 text-white px-4 py-2 rounded mt-4 inline-block"
-        href={`/api/fee/receipt/${data.paymentId}`}
+        href={`${BACKEND_URL}/api/fee/receipt/${data.paymentId}`}
         target="_blank"
         rel="noopener noreferrer"
       >

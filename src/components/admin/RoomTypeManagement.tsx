@@ -8,6 +8,8 @@ import { Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
 const RoomTypeManagement = () => {
   const [roomTypes, setRoomTypes] = useState<any[]>([]);
   const [newRoomType, setNewRoomType] = useState({ name: "" });
@@ -17,7 +19,7 @@ const RoomTypeManagement = () => {
   // Fetch room types from backend
   const fetchRoomTypes = async () => {
     try {
-      const res = await axios.get("/api/dropdowns/room-types");
+      const res = await axios.get(`${BACKEND_URL}/api/dropdowns/room-types`);
       setRoomTypes(res.data);
     } catch (err) {
       toast({ title: "Error", description: "Failed to fetch room types.", variant: "destructive" });
@@ -30,7 +32,7 @@ const RoomTypeManagement = () => {
     e.preventDefault();
     if (!newRoomType.name) return;
     try {
-      await axios.post("/api/admin/room-type", { name: newRoomType.name });
+      await axios.post(`${BACKEND_URL}/api/admin/room-type`, { name: newRoomType.name });
       toast({ title: "Room Type Added", description: `${newRoomType.name} has been added successfully.` });
       setNewRoomType({ name: "" });
       setIsAdding(false);
@@ -43,7 +45,7 @@ const RoomTypeManagement = () => {
   const handleDeleteRoomType = async (id: string) => {
     if (!window.confirm("Delete this room type?")) return;
     try {
-      await axios.delete(`/api/admin/room-type/${id}`);
+      await axios.delete(`${BACKEND_URL}/api/admin/room-type/${id}`);
       toast({ title: "Room Type Removed", description: "Room type has been removed successfully." });
       fetchRoomTypes();
     } catch (err: any) {
