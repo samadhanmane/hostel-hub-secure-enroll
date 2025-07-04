@@ -6,11 +6,7 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
-    port: 5173,
-    proxy: {
-      '/api': 'http://localhost:5000',
-    },
+    // Proxy removed: all API calls should use VITE_BACKEND_URL
   },
   plugins: [
     react(),
