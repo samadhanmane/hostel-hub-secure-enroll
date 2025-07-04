@@ -1,30 +1,44 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/providers/AuthProvider";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Header from './components/layout/Header';
+import EnrollmentForm from './pages/EnrollmentForm';
+import Login from './pages/Login';
+import UserDashboard from './pages/UserDashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import Payment from './pages/Payment';
+import Receipt from './pages/Receipt';
+import { AuthProvider } from './providers/AuthProvider';
 
-const queryClient = new QueryClient();
+const ProtectedRoute = ({ children, role }: { children: React.ReactNode; role: string }) => {
+  const token = localStorage.getItem('token');
+  const userRole = localStorage.getItem('role');
+  if (!token || userRole !== role) return <Navigate to="/login" />;
+  return <>{children}</>;
+};
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+const RequireAuth = ({ children }: { children: React.ReactNode }) => {
+  const token = localStorage.getItem('token');
+  if (!token) return <Navigate to="/login" />;
+  return <>{children}</>;
+};
+
+function App() {
+  return (
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <Router>
+        <Header />
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<RequireAuth><EnrollmentForm /></RequireAuth>} />
+          <Route path="/user-dashboard" element={<ProtectedRoute role="user"><UserDashboard /></ProtectedRoute>} />
+          <Route path="/admin-dashboard" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/payment" element={<RequireAuth><Payment /></RequireAuth>} />
+          <Route path="/receipt" element={<RequireAuth><Receipt /></RequireAuth>} />
+          <Route path="*" element={<Navigate to="/login" />} />
+        </Routes>
+      </Router>
     </AuthProvider>
-  </QueryClientProvider>
-);
+  );
+}
 
 export default App;

@@ -4,50 +4,50 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 
-const CollegeManagement = () => {
-  const [colleges, setColleges] = useState<any[]>([]);
-  const [newCollege, setNewCollege] = useState({ name: "" });
+const DepartmentManagement = () => {
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [newDepartment, setNewDepartment] = useState({ name: "" });
   const [isAdding, setIsAdding] = useState(false);
   const { toast } = useToast();
 
-  // Fetch colleges from backend
-  const fetchColleges = async () => {
+  // Fetch departments from backend
+  const fetchDepartments = async () => {
     try {
-      const res = await axios.get("/api/dropdowns/colleges");
-      setColleges(res.data);
+      const res = await axios.get("/api/dropdowns/departments");
+      setDepartments(res.data);
     } catch (err) {
-      toast({ title: "Error", description: "Failed to fetch colleges.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to fetch departments.", variant: "destructive" });
     }
   };
 
-  useEffect(() => { fetchColleges(); }, []);
+  useEffect(() => { fetchDepartments(); }, []);
 
-  const handleAddCollege = async (e: React.FormEvent) => {
+  const handleAddDepartment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCollege.name) return;
+    if (!newDepartment.name) return;
     try {
-      await axios.post("/api/admin/college", { name: newCollege.name });
-      toast({ title: "College Added", description: `${newCollege.name} has been added successfully.` });
-      setNewCollege({ name: "" });
+      await axios.post("/api/admin/department", { name: newDepartment.name });
+      toast({ title: "Department Added", description: `${newDepartment.name} has been added successfully.` });
+      setNewDepartment({ name: "" });
       setIsAdding(false);
-      fetchColleges();
+      fetchDepartments();
     } catch (err: any) {
-      toast({ title: "Error", description: err.response?.data?.message || "Failed to add college.", variant: "destructive" });
+      toast({ title: "Error", description: err.response?.data?.message || "Failed to add department.", variant: "destructive" });
     }
   };
 
-  const handleDeleteCollege = async (id: string) => {
-    if (!window.confirm("Delete this college?")) return;
+  const handleDeleteDepartment = async (id: string) => {
+    if (!window.confirm("Delete this department?")) return;
     try {
-      await axios.delete(`/api/admin/college/${id}`);
-      toast({ title: "College Removed", description: "College has been removed successfully." });
-      fetchColleges();
+      await axios.delete(`/api/admin/department/${id}`);
+      toast({ title: "Department Removed", description: "Department has been removed successfully." });
+      fetchDepartments();
     } catch (err: any) {
-      toast({ title: "Error", description: err.response?.data?.message || "Failed to delete college.", variant: "destructive" });
+      toast({ title: "Error", description: err.response?.data?.message || "Failed to delete department.", variant: "destructive" });
     }
   };
 
@@ -56,37 +56,37 @@ const CollegeManagement = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>College Management</span>
+            <span>Department Management</span>
             <Button 
               onClick={() => setIsAdding(!isAdding)}
               className="bg-hostel-primary hover:bg-hostel-primary/90"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Add College
+              Add Department
             </Button>
           </CardTitle>
           <CardDescription>
-            Manage colleges that are part of the hostel system
+            Manage departments that are part of the hostel system
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isAdding && (
-            <form onSubmit={handleAddCollege} className="mb-6 p-4 border rounded-lg space-y-4">
+            <form onSubmit={handleAddDepartment} className="mb-6 p-4 border rounded-lg space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="college-name">College Name</Label>
+                  <Label htmlFor="department-name">Department Name</Label>
                   <Input
-                    id="college-name"
-                    value={newCollege.name}
-                    onChange={(e) => setNewCollege({ ...newCollege, name: e.target.value })}
-                    placeholder="Enter college name"
+                    id="department-name"
+                    value={newDepartment.name}
+                    onChange={(e) => setNewDepartment({ ...newDepartment, name: e.target.value })}
+                    placeholder="Enter department name"
                     required
                   />
                 </div>
               </div>
               <div className="flex space-x-2">
                 <Button type="submit" className="bg-hostel-success hover:bg-hostel-success/90">
-                  Add College
+                  Add Department
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setIsAdding(false)}>
                   Cancel
@@ -98,22 +98,22 @@ const CollegeManagement = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>College Name</TableHead>
+                  <TableHead>Department Name</TableHead>
                   <TableHead>Created Date</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {colleges.map((college) => (
-                  <TableRow key={college._id}>
-                    <TableCell className="font-medium">{college.name}</TableCell>
-                    <TableCell>{new Date(college.createdAt).toLocaleDateString()}</TableCell>
+                {departments.map((department) => (
+                  <TableRow key={department._id}>
+                    <TableCell className="font-medium">{department.name}</TableCell>
+                    <TableCell>{new Date(department.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          onClick={() => handleDeleteCollege(college._id)}
+                          onClick={() => handleDeleteDepartment(department._id)}
                           className="text-hostel-danger hover:text-hostel-danger"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -131,4 +131,4 @@ const CollegeManagement = () => {
   );
 };
 
-export default CollegeManagement;
+export default DepartmentManagement; 

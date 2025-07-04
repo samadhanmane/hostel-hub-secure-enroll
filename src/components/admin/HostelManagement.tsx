@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,61 +8,51 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import axios from "axios";
 import { Hostel } from "@/types";
 
 const HostelManagement = () => {
-  const [hostels, setHostels] = useState<Hostel[]>([
-    { id: '1', name: 'MITAOE Boys Hostel-A', type: 'boys', collegeId: '1', createdAt: new Date() },
-    { id: '2', name: 'MITAOE Girls Hostel-A', type: 'girls', collegeId: '1', createdAt: new Date() },
-    { id: '3', name: 'PIT Boys Hostel-B', type: 'boys', collegeId: '2', createdAt: new Date() },
-  ]);
-  
-  const [newHostel, setNewHostel] = useState({ 
-    name: '', 
-    type: '' as 'boys' | 'girls' | '', 
-    collegeId: '' 
-  });
+  const [hostels, setHostels] = useState<Hostel[]>([]);
+  const [colleges, setColleges] = useState<any[]>([]);
+  const [newHostel, setNewHostel] = useState({ name: "", type: "boys" });
   const [isAdding, setIsAdding] = useState(false);
   const { toast } = useToast();
 
-  const colleges = [
-    { id: '1', name: 'MIT Academy of Engineering' },
-    { id: '2', name: 'Pune Institute of Technology' },
-    { id: '3', name: 'Maharashtra Academy' }
-  ];
+  // Fetch hostels and colleges from backend
+  const fetchHostels = async () => {
+    try {
+      const res = await axios.get("/api/dropdowns/hostels");
+      setHostels(res.data);
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to fetch hostels.", variant: "destructive" });
+    }
+  };
 
-  const handleAddHostel = (e: React.FormEvent) => {
+  useEffect(() => { fetchHostels(); }, []);
+
+  const handleAddHostel = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newHostel.name || !newHostel.type || !newHostel.collegeId) return;
-
-    const hostel: Hostel = {
-      id: Date.now().toString(),
-      name: newHostel.name,
-      type: newHostel.type as 'boys' | 'girls',
-      collegeId: newHostel.collegeId,
-      createdAt: new Date()
-    };
-
-    setHostels([...hostels, hostel]);
-    setNewHostel({ name: '', type: '', collegeId: '' });
-    setIsAdding(false);
-    
-    toast({
-      title: "Hostel Added",
-      description: `${newHostel.name} has been added successfully.`,
-    });
+    if (!newHostel.name || !newHostel.type) return;
+    try {
+      await axios.post("/api/admin/hostel", { name: newHostel.name, type: newHostel.type });
+      toast({ title: "Hostel Added", description: `${newHostel.name} has been added successfully.` });
+      setNewHostel({ name: "", type: "boys" });
+      setIsAdding(false);
+      fetchHostels();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.response?.data?.message || "Failed to add hostel.", variant: "destructive" });
+    }
   };
 
-  const handleDeleteHostel = (id: string) => {
-    setHostels(hostels.filter(hostel => hostel.id !== id));
-    toast({
-      title: "Hostel Removed",
-      description: "Hostel has been removed successfully.",
-    });
-  };
-
-  const getCollegeName = (collegeId: string) => {
-    return colleges.find(c => c.id === collegeId)?.name || 'Unknown';
+  const handleDeleteHostel = async (id: string) => {
+    if (!window.confirm("Delete this hostel?")) return;
+    try {
+      await axios.delete(`/api/admin/hostel/${id}`);
+      toast({ title: "Hostel Removed", description: "Hostel has been removed successfully." });
+      fetchHostels();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.response?.data?.message || "Failed to delete hostel.", variant: "destructive" });
+    }
   };
 
   const getHostelTypeColor = (type: string) => {
@@ -84,10 +74,9 @@ const HostelManagement = () => {
             </Button>
           </CardTitle>
           <CardDescription>
-            Manage hostels across all colleges
+            Manage hostels that are part of the hostel system
           </CardDescription>
         </CardHeader>
-        
         <CardContent>
           {isAdding && (
             <form onSubmit={handleAddHostel} className="mb-6 p-4 border rounded-lg space-y-4">
@@ -97,33 +86,20 @@ const HostelManagement = () => {
                   <Input
                     id="hostel-name"
                     value={newHostel.name}
-                    onChange={(e) => setNewHostel({...newHostel, name: e.target.value})}
+                    onChange={(e) => setNewHostel({ ...newHostel, name: e.target.value })}
                     placeholder="Enter hostel name"
                     required
                   />
                 </div>
                 <div>
                   <Label htmlFor="hostel-type">Hostel Type</Label>
-                  <Select value={newHostel.type} onValueChange={(value: 'boys' | 'girls') => setNewHostel({...newHostel, type: value})}>
+                  <Select value={newHostel.type} onValueChange={(value: 'boys' | 'girls') => setNewHostel({ ...newHostel, type: value })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="boys">Boys Hostel</SelectItem>
                       <SelectItem value="girls">Girls Hostel</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="college">College</Label>
-                  <Select value={newHostel.collegeId} onValueChange={(value) => setNewHostel({...newHostel, collegeId: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select college" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {colleges.map(college => (
-                        <SelectItem key={college.id} value={college.id}>{college.name}</SelectItem>
-                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -145,31 +121,26 @@ const HostelManagement = () => {
                 <TableRow>
                   <TableHead>Hostel Name</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>College</TableHead>
                   <TableHead>Created Date</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {hostels.map((hostel) => (
-                  <TableRow key={hostel.id}>
+                  <TableRow key={hostel._id}>
                     <TableCell className="font-medium">{hostel.name}</TableCell>
                     <TableCell>
                       <Badge className={getHostelTypeColor(hostel.type)}>
                         {hostel.type}
                       </Badge>
                     </TableCell>
-                    <TableCell>{getCollegeName(hostel.collegeId)}</TableCell>
-                    <TableCell>{hostel.createdAt.toLocaleDateString()}</TableCell>
+                    <TableCell>{hostel.createdAt ? new Date(hostel.createdAt).toLocaleDateString() : ''}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
-                        <Button variant="ghost" size="sm">
-                          <Edit className="w-4 h-4" />
-                        </Button>
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          onClick={() => handleDeleteHostel(hostel.id)}
+                          onClick={() => handleDeleteHostel(hostel._id)}
                           className="text-hostel-danger hover:text-hostel-danger"
                         >
                           <Trash2 className="w-4 h-4" />

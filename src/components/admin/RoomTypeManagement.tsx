@@ -4,50 +4,50 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 
-const CollegeManagement = () => {
-  const [colleges, setColleges] = useState<any[]>([]);
-  const [newCollege, setNewCollege] = useState({ name: "" });
+const RoomTypeManagement = () => {
+  const [roomTypes, setRoomTypes] = useState<any[]>([]);
+  const [newRoomType, setNewRoomType] = useState({ name: "" });
   const [isAdding, setIsAdding] = useState(false);
   const { toast } = useToast();
 
-  // Fetch colleges from backend
-  const fetchColleges = async () => {
+  // Fetch room types from backend
+  const fetchRoomTypes = async () => {
     try {
-      const res = await axios.get("/api/dropdowns/colleges");
-      setColleges(res.data);
+      const res = await axios.get("/api/dropdowns/room-types");
+      setRoomTypes(res.data);
     } catch (err) {
-      toast({ title: "Error", description: "Failed to fetch colleges.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to fetch room types.", variant: "destructive" });
     }
   };
 
-  useEffect(() => { fetchColleges(); }, []);
+  useEffect(() => { fetchRoomTypes(); }, []);
 
-  const handleAddCollege = async (e: React.FormEvent) => {
+  const handleAddRoomType = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCollege.name) return;
+    if (!newRoomType.name) return;
     try {
-      await axios.post("/api/admin/college", { name: newCollege.name });
-      toast({ title: "College Added", description: `${newCollege.name} has been added successfully.` });
-      setNewCollege({ name: "" });
+      await axios.post("/api/admin/room-type", { name: newRoomType.name });
+      toast({ title: "Room Type Added", description: `${newRoomType.name} has been added successfully.` });
+      setNewRoomType({ name: "" });
       setIsAdding(false);
-      fetchColleges();
+      fetchRoomTypes();
     } catch (err: any) {
-      toast({ title: "Error", description: err.response?.data?.message || "Failed to add college.", variant: "destructive" });
+      toast({ title: "Error", description: err.response?.data?.message || "Failed to add room type.", variant: "destructive" });
     }
   };
 
-  const handleDeleteCollege = async (id: string) => {
-    if (!window.confirm("Delete this college?")) return;
+  const handleDeleteRoomType = async (id: string) => {
+    if (!window.confirm("Delete this room type?")) return;
     try {
-      await axios.delete(`/api/admin/college/${id}`);
-      toast({ title: "College Removed", description: "College has been removed successfully." });
-      fetchColleges();
+      await axios.delete(`/api/admin/room-type/${id}`);
+      toast({ title: "Room Type Removed", description: "Room type has been removed successfully." });
+      fetchRoomTypes();
     } catch (err: any) {
-      toast({ title: "Error", description: err.response?.data?.message || "Failed to delete college.", variant: "destructive" });
+      toast({ title: "Error", description: err.response?.data?.message || "Failed to delete room type.", variant: "destructive" });
     }
   };
 
@@ -56,37 +56,37 @@ const CollegeManagement = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>College Management</span>
+            <span>Room Type Management</span>
             <Button 
               onClick={() => setIsAdding(!isAdding)}
               className="bg-hostel-primary hover:bg-hostel-primary/90"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Add College
+              Add Room Type
             </Button>
           </CardTitle>
           <CardDescription>
-            Manage colleges that are part of the hostel system
+            Manage room types that are part of the hostel system
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isAdding && (
-            <form onSubmit={handleAddCollege} className="mb-6 p-4 border rounded-lg space-y-4">
+            <form onSubmit={handleAddRoomType} className="mb-6 p-4 border rounded-lg space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="college-name">College Name</Label>
+                  <Label htmlFor="room-type-name">Room Type Name</Label>
                   <Input
-                    id="college-name"
-                    value={newCollege.name}
-                    onChange={(e) => setNewCollege({ ...newCollege, name: e.target.value })}
-                    placeholder="Enter college name"
+                    id="room-type-name"
+                    value={newRoomType.name}
+                    onChange={(e) => setNewRoomType({ ...newRoomType, name: e.target.value })}
+                    placeholder="Enter room type name"
                     required
                   />
                 </div>
               </div>
               <div className="flex space-x-2">
                 <Button type="submit" className="bg-hostel-success hover:bg-hostel-success/90">
-                  Add College
+                  Add Room Type
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setIsAdding(false)}>
                   Cancel
@@ -98,22 +98,22 @@ const CollegeManagement = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>College Name</TableHead>
+                  <TableHead>Room Type Name</TableHead>
                   <TableHead>Created Date</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {colleges.map((college) => (
-                  <TableRow key={college._id}>
-                    <TableCell className="font-medium">{college.name}</TableCell>
-                    <TableCell>{new Date(college.createdAt).toLocaleDateString()}</TableCell>
+                {roomTypes.map((roomType) => (
+                  <TableRow key={roomType._id}>
+                    <TableCell className="font-medium">{roomType.name}</TableCell>
+                    <TableCell>{new Date(roomType.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          onClick={() => handleDeleteCollege(college._id)}
+                          onClick={() => handleDeleteRoomType(roomType._id)}
                           className="text-hostel-danger hover:text-hostel-danger"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -131,4 +131,4 @@ const CollegeManagement = () => {
   );
 };
 
-export default CollegeManagement;
+export default RoomTypeManagement; 

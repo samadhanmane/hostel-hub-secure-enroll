@@ -12,36 +12,36 @@ import { generateStudentId } from "@/utils/studentIdGenerator";
 import { calculateFee, formatCurrency } from "@/utils/feeCalculator";
 import { Student } from "@/types";
 import { Calendar, User, Mail, Phone, GraduationCap, Building, Bed } from "lucide-react";
+import axios from "axios";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useNavigate } from 'react-router-dom';
 
-// Mock data - in real app, this would come from API/database
-const mockColleges = [
-  { id: '1', name: 'MIT Academy of Engineering', code: 'MITAOE' },
-  { id: '2', name: 'Pune Institute of Technology', code: 'PIT' },
-  { id: '3', name: 'Maharashtra Academy', code: 'MA' }
-];
-
-const mockHostels = [
-  { id: '1', name: 'MITAOE Boys Hostel-A', type: 'boys' as const, collegeId: '1' },
-  { id: '2', name: 'MITAOE Girls Hostel-A', type: 'girls' as const, collegeId: '1' },
-  { id: '3', name: 'PIT Boys Hostel-B', type: 'boys' as const, collegeId: '2' },
-];
-
-const academicYears = ['First Year', 'Second Year', 'Third Year', 'Fourth Year'];
-const admissionYears = ['2021', '2022', '2023', '2024', '2025'];
-const branches = ['Computer Science', 'Information Technology', 'Electronics', 'Mechanical', 'Civil'];
-const castes = ['General', 'OBC', 'SC', 'ST', 'EWS'];
-const hostelYears = ['2025-2026', '2026-2027', '2027-2028'];
-const roomTypes = [
-  { id: '2-sharing', name: '2 Person Sharing', capacity: 2 },
-  { id: '3-sharing', name: '3 Person Sharing', capacity: 3 }
-];
+const VITE_RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID;
 
 const EnrollmentForm = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [generatedStudentId, setGeneratedStudentId] = useState<string>("");
-  
+  const [existingStudent, setExistingStudent] = useState(null);
+  const [isPaying, setIsPaying] = useState(false);
+  const [colleges, setColleges] = useState<any[]>([]);
+  const [hostels, setHostels] = useState<any[]>([]);
+  const [roomTypes, setRoomTypes] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [years, setYears] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [fees, setFees] = useState<any[]>([]);
+  const [settings, setSettings] = useState({
+    academicYears: [],
+    admissionYears: [],
+    branches: [],
+    castes: [],
+    hostelYears: [],
+    roomTypes: [],
+    installments: 2
+  });
+
   const [formData, setFormData] = useState({
     name: "",
     email: user?.email || "",
@@ -62,21 +62,18 @@ const EnrollmentForm = () => {
     baseFee: 0,
     deposit: 0,
     totalFee: 0,
-    canSplitPayment: false,
-    installmentAmount: 0,
-    installments: undefined as number | undefined
   });
 
-  // Filter hostels based on selected college and hostel type
-  const filteredHostels = mockHostels.filter(
-    hostel => hostel.collegeId === formData.collegeId && hostel.type === formData.hostelType
-  );
+  const navigate = useNavigate();
+
+  // Remove filtering by collegeId for hostels
+  const filteredHostels = formData.hostelType ? hostels.filter(hostel => hostel.type === formData.hostelType) : hostels;
 
   // Generate student ID when key fields change
   useEffect(() => {
     if (formData.hostelYear && formData.academicYear && formData.collegeId && formData.roomType && formData.hostelType) {
-      const college = mockColleges.find(c => c.id === formData.collegeId);
-      const roomType = roomTypes.find(r => r.id === formData.roomType);
+      const college = colleges.find(c => c._id === formData.collegeId);
+      const roomType = settings.roomTypes.find(r => r.id === formData.roomType);
       
       if (college && roomType) {
         const studentId = generateStudentId(
@@ -89,31 +86,75 @@ const EnrollmentForm = () => {
         setGeneratedStudentId(studentId);
       }
     }
-  }, [formData.hostelYear, formData.academicYear, formData.collegeId, formData.roomType, formData.hostelType]);
+  }, [formData.hostelYear, formData.academicYear, formData.collegeId, formData.roomType, formData.hostelType, settings.roomTypes, colleges]);
 
   // Calculate fees when relevant fields change
   useEffect(() => {
     if (formData.hostelId && formData.roomType && formData.hostelYear && formData.caste && formData.studentType) {
-      const calculation = calculateFee(
-        formData.hostelId,
-        formData.roomType,
-        formData.hostelYear,
-        formData.caste,
-        formData.studentType,
-        [], // Empty fee structures for demo
-        { id: '1', studentEmail: formData.email, isActive: true, installments: 2, createdAt: new Date() }
+      const hostelObj = hostels.find(h => h._id === formData.hostelId);
+      const hostelName = hostelObj ? hostelObj.name : '';
+      const fee = fees.find(f =>
+        f.hostelYear === formData.hostelYear &&
+        f.roomType === formData.roomType &&
+        f.category === formData.caste &&
+        f.hostelName === hostelName &&
+        f.studentType === formData.studentType
       );
-      
-      setFeeDetails({
-        baseFee: calculation.baseFee,
-        deposit: calculation.deposit,
-        totalFee: calculation.totalFee,
-        canSplitPayment: calculation.canSplitPayment,
-        installmentAmount: calculation.installmentAmount || 0,
-        installments: calculation.installments
-      });
+      if (fee) {
+        const total = fee.amount + (fee.deposit || 0);
+        setFeeDetails({
+          baseFee: fee.amount,
+          deposit: fee.deposit,
+          totalFee: total,
+        });
+      } else {
+        setFeeDetails({
+          baseFee: 0,
+          deposit: 0,
+          totalFee: 0,
+        });
+      }
     }
-  }, [formData.hostelId, formData.roomType, formData.hostelYear, formData.caste, formData.studentType, formData.email]);
+  }, [formData.hostelId, formData.roomType, formData.hostelYear, formData.caste, formData.studentType, formData.email, fees, hostels]);
+
+  useEffect(() => {
+    if (user?.email) {
+      // Fetch student record by email
+      axios.get(`/api/auth/student/by-email?email=${encodeURIComponent(user.email)}`)
+        .then(res => setExistingStudent(res.data))
+        .catch(() => setExistingStudent(null));
+    }
+  }, [user?.email]);
+
+  useEffect(() => {
+    axios.get('/api/dropdowns/colleges').then(res => setColleges(res.data)).catch(() => setColleges([]));
+    axios.get('/api/dropdowns/hostels').then(res => setHostels(res.data)).catch(() => setHostels([]));
+    axios.get('/api/dropdowns/room-types').then(res => setRoomTypes(res.data)).catch(() => setRoomTypes([]));
+    axios.get('/api/dropdowns/categories').then(res => setCategories(res.data)).catch(() => setCategories([]));
+    axios.get('/api/dropdowns/years').then(res => setYears(res.data)).catch(() => setYears([]));
+    axios.get('/api/dropdowns/departments').then(res => setDepartments(res.data)).catch(() => setDepartments([]));
+    axios.get('/api/admin/fees').then(res => setFees(res.data)).catch(() => setFees([]));
+    axios.get('/api/admin/settings').then(res => setSettings(res.data)).catch(() => setSettings({
+      academicYears: [],
+      admissionYears: [],
+      branches: [],
+      castes: [],
+      hostelYears: [],
+      roomTypes: [],
+      installments: 2
+    }));
+  }, []);
+
+  // Refetch fees from backend every time a key selection changes
+  useEffect(() => {
+    axios.get("/api/admin/fees").then(res => setFees(res.data)).catch(() => setFees([]));
+  }, [formData.hostelId, formData.roomType, formData.hostelYear, formData.caste, formData.studentType]);
+
+  useEffect(() => {
+    if (user?.email && !formData.email) {
+      setFormData((prev) => ({ ...prev, email: user.email }));
+    }
+  }, [user?.email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,8 +232,37 @@ const EnrollmentForm = () => {
     }
   };
 
+  // Update handleGoToPaymentPage to pass all required fields
+  const handleGoToPaymentPage = () => {
+    // Derive hostelName from hostelId and hostels array
+    const hostelObj = hostels.find(h => h._id === formData.hostelId);
+    const hostelName = hostelObj ? hostelObj.name : '';
+    const college = colleges.find(c => c._id === formData.collegeId);
+    navigate('/payment', {
+      state: {
+        ...formData,
+        college: college?.name || '-',
+        year: formData.academicYear || '-',
+        department: formData.branch, // map branch to department
+        contact: formData.contact,   // contactNo expected as contact
+        hostelName, // derived from hostelId
+        admissionYear: formData.yearOfAdmission, // map yearOfAdmission to admissionYear
+        category: formData.caste, // map caste to category
+        fee: {
+          amount: feeDetails.baseFee,
+          deposit: feeDetails.deposit,
+        },
+      }
+    });
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
+      {existingStudent?.studentId && (
+        <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-4 text-lg font-bold text-center">
+          Your Student ID: {existingStudent.studentId}
+        </div>
+      )}
       <Card className="shadow-lg">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold flex items-center justify-center space-x-2">
@@ -232,6 +302,7 @@ const EnrollmentForm = () => {
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                     placeholder="Enter email address"
                     required
+                    readOnly={!!user?.email}
                   />
                 </div>
                 
@@ -278,8 +349,8 @@ const EnrollmentForm = () => {
                       <SelectValue placeholder="Select college" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockColleges.map(college => (
-                        <SelectItem key={college.id} value={college.id}>{college.name}</SelectItem>
+                      {colleges.map(college => (
+                        <SelectItem key={college._id} value={college._id}>{college.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -292,7 +363,7 @@ const EnrollmentForm = () => {
                       <SelectValue placeholder="Select admission year" />
                     </SelectTrigger>
                     <SelectContent>
-                      {admissionYears.map(year => (
+                      {settings.admissionYears.map(year => (
                         <SelectItem key={year} value={year}>{year}</SelectItem>
                       ))}
                     </SelectContent>
@@ -306,7 +377,7 @@ const EnrollmentForm = () => {
                       <SelectValue placeholder="Select academic year" />
                     </SelectTrigger>
                     <SelectContent>
-                      {academicYears.map(year => (
+                      {settings.academicYears.map(year => (
                         <SelectItem key={year} value={year}>{year}</SelectItem>
                       ))}
                     </SelectContent>
@@ -320,7 +391,7 @@ const EnrollmentForm = () => {
                       <SelectValue placeholder="Select branch" />
                     </SelectTrigger>
                     <SelectContent>
-                      {branches.map(branch => (
+                      {settings.branches.map(branch => (
                         <SelectItem key={branch} value={branch}>{branch}</SelectItem>
                       ))}
                     </SelectContent>
@@ -334,7 +405,7 @@ const EnrollmentForm = () => {
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {castes.map(caste => (
+                      {settings.castes.map(caste => (
                         <SelectItem key={caste} value={caste}>{caste}</SelectItem>
                       ))}
                     </SelectContent>
@@ -368,13 +439,13 @@ const EnrollmentForm = () => {
 
                 <div>
                   <Label htmlFor="hostel">Hostel Name *</Label>
-                  <Select value={formData.hostelId} onValueChange={(value) => setFormData({...formData, hostelId: value})} disabled={!formData.collegeId || !formData.hostelType}>
+                  <Select value={formData.hostelId} onValueChange={(value) => setFormData({...formData, hostelId: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select hostel" />
                     </SelectTrigger>
                     <SelectContent>
                       {filteredHostels.map(hostel => (
-                        <SelectItem key={hostel.id} value={hostel.id}>{hostel.name}</SelectItem>
+                        <SelectItem key={hostel._id} value={hostel._id}>{hostel.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -387,8 +458,8 @@ const EnrollmentForm = () => {
                       <SelectValue placeholder="Select room type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {roomTypes.map(room => (
-                        <SelectItem key={room.id} value={room.id}>{room.name}</SelectItem>
+                      {settings.roomTypes.map(roomType => (
+                        <SelectItem key={roomType} value={roomType}>{roomType}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -401,7 +472,7 @@ const EnrollmentForm = () => {
                       <SelectValue placeholder="Select hostel year" />
                     </SelectTrigger>
                     <SelectContent>
-                      {hostelYears.map(year => (
+                      {settings.hostelYears.map(year => (
                         <SelectItem key={year} value={year}>{year}</SelectItem>
                       ))}
                     </SelectContent>
@@ -443,26 +514,18 @@ const EnrollmentForm = () => {
                       <span>Total Fee:</span>
                       <span className="text-accent-foreground">{formatCurrency(feeDetails.totalFee)}</span>
                     </div>
-                    {feeDetails.canSplitPayment && (
-                      <div className="mt-4 p-3 bg-accent/10 rounded-lg">
-                        <Badge variant="outline" className="mb-2">Split Payment Available</Badge>
-                        <div className="text-sm">
-                          <div>Installment Amount: <span className="font-semibold">{formatCurrency(feeDetails.installmentAmount)}</span></div>
-                          <div className="text-muted-foreground">Pay in 2 installments (4 months gap)</div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </>
             )}
 
-            <Button 
-              type="submit" 
+            <Button
+              type="button"
               className="w-full py-6 text-lg"
-              disabled={isSubmitting}
+              onClick={handleGoToPaymentPage}
+              disabled={isPaying || feeDetails.totalFee <= 0}
             >
-              {isSubmitting ? "Processing Enrollment..." : "Proceed to Payment"}
+              {isPaying ? "Processing..." : "Proceed to Payment"}
             </Button>
           </form>
         </CardContent>
@@ -471,4 +534,4 @@ const EnrollmentForm = () => {
   );
 };
 
-export default EnrollmentForm;
+export default EnrollmentForm; 

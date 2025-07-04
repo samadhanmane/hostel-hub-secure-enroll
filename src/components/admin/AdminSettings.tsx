@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, X, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
+import axios from "axios";
 
 const AdminSettings = () => {
   const [settings, setSettings] = useState({
@@ -17,30 +18,39 @@ const AdminSettings = () => {
     roomTypes: ['2 Person Sharing', '3 Person Sharing']
   });
 
-  const [newItems, setNewItems] = useState({
-    academicYear: '',
-    branch: '',
-    caste: '',
-    hostelYear: '',
-    roomType: ''
-  });
-
   const { toast } = useToast();
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    axios.get("/api/admin/settings").then(res => setSettings(res.data)).catch(() => {});
+  }, []);
+
+  const saveSettings = async (updatedSettings: typeof settings, onSuccess?: () => void) => {
+    setIsSaving(true);
+    try {
+      await axios.post("/api/admin/settings", updatedSettings);
+      setSettings(updatedSettings);
+      toast({ title: "Settings Saved", description: "Settings have been updated successfully." });
+      if (onSuccess) onSuccess();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.response?.data?.message || "Failed to save settings.", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const addItem = (category: keyof typeof settings, value: string) => {
     if (!value.trim()) return;
-    
     const updatedSettings = {
       ...settings,
       [category]: [...settings[category], value.trim()]
     };
-    
-    setSettings(updatedSettings);
-    setNewItems({...newItems, [category.replace('s', '') as keyof typeof newItems]: ''});
-    
+    saveSettings(updatedSettings, () => {
     toast({
       title: "Item Added",
       description: `${value} has been added to ${category}.`,
+      });
     });
   };
 
@@ -49,9 +59,7 @@ const AdminSettings = () => {
       ...settings,
       [category]: settings[category].filter((_, i) => i !== index)
     };
-    
-    setSettings(updatedSettings);
-    
+    saveSettings(updatedSettings);
     toast({
       title: "Item Removed",
       description: "Item has been removed successfully.",
@@ -62,17 +70,26 @@ const AdminSettings = () => {
     title, 
     category, 
     items, 
-    newValue, 
-    onChange, 
-    placeholder 
+    placeholder, 
+    addItem, 
+    removeItem 
   }: {
     title: string;
     category: keyof typeof settings;
     items: string[];
-    newValue: string;
-    onChange: (value: string) => void;
     placeholder: string;
-  }) => (
+    addItem: (category: keyof typeof settings, value: string) => void;
+    removeItem: (category: keyof typeof settings, index: number) => void;
+  }) => {
+    const [inputValue, setInputValue] = useState('');
+
+    const handleAdd = () => {
+      if (!inputValue.trim()) return;
+      addItem(category, inputValue);
+      setInputValue('');
+    };
+
+    return (
     <Card>
       <CardHeader>
         <CardTitle className="text-lg">{title}</CardTitle>
@@ -95,21 +112,20 @@ const AdminSettings = () => {
               </Badge>
             ))}
           </div>
-          
           <div className="flex space-x-2">
             <Input
-              value={newValue}
-              onChange={(e) => onChange(e.target.value)}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
               placeholder={placeholder}
               onKeyPress={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
-                  addItem(category, newValue);
+                    handleAdd();
                 }
               }}
             />
             <Button 
-              onClick={() => addItem(category, newValue)}
+                onClick={handleAdd}
               className="bg-hostel-primary hover:bg-hostel-primary/90"
             >
               <Plus className="w-4 h-4" />
@@ -119,6 +135,7 @@ const AdminSettings = () => {
       </CardContent>
     </Card>
   );
+  };
 
   return (
     <div className="space-y-6">
@@ -139,45 +156,54 @@ const AdminSettings = () => {
           title="Academic Years"
           category="academicYears"
           items={settings.academicYears}
-          newValue={newItems.academicYear}
-          onChange={(value) => setNewItems({...newItems, academicYear: value})}
           placeholder="Enter academic year (e.g., Fifth Year)"
+          addItem={addItem}
+          removeItem={removeItem}
+        />
+
+        <SettingSection
+          title="Year of Admission"
+          category="admissionYears"
+          items={settings.admissionYears || []}
+          placeholder="Enter year of admission (e.g., 2025)"
+          addItem={addItem}
+          removeItem={removeItem}
         />
 
         <SettingSection
           title="Branches/Departments"
           category="branches"
           items={settings.branches}
-          newValue={newItems.branch}
-          onChange={(value) => setNewItems({...newItems, branch: value})}
           placeholder="Enter branch name"
+          addItem={addItem}
+          removeItem={removeItem}
         />
 
         <SettingSection
           title="Caste/Categories"
           category="castes"
           items={settings.castes}
-          newValue={newItems.caste}
-          onChange={(value) => setNewItems({...newItems, caste: value})}
           placeholder="Enter caste/category"
+          addItem={addItem}
+          removeItem={removeItem}
         />
 
         <SettingSection
           title="Hostel Years"
           category="hostelYears"
           items={settings.hostelYears}
-          newValue={newItems.hostelYear}
-          onChange={(value) => setNewItems({...newItems, hostelYear: value})}
           placeholder="Enter hostel year (e.g., 2028-2029)"
+          addItem={addItem}
+          removeItem={removeItem}
         />
 
         <SettingSection
           title="Room Types"
           category="roomTypes"
           items={settings.roomTypes}
-          newValue={newItems.roomType}
-          onChange={(value) => setNewItems({...newItems, roomType: value})}
           placeholder="Enter room type (e.g., 4 Person Sharing)"
+          addItem={addItem}
+          removeItem={removeItem}
         />
       </div>
 

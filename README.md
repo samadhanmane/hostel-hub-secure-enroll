@@ -71,3 +71,54 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+# Hostel Hub Secure Enroll
+
+## Project Structure
+
+```
+hostel-hub-secure-enroll/
+  backend/                # Node.js/Express/MongoDB API
+    models/
+    routes/
+    controllers/
+    middleware/
+    utils/
+    .env                  # Environment variables (see .env.example)
+    server.js             # Entry point
+  src/                    # React frontend (user/admin panels)
+    components/
+    pages/
+    hooks/
+    ...
+```
+
+## Setup Instructions
+
+### Backend
+1. `cd backend`
+2. `npm install`
+3. Copy `.env.example` to `.env` and fill in the required values (see below).
+4. `npm run dev` to start the backend server.
+
+### Frontend
+1. `cd ..` (project root)
+2. `npm install`
+3. `npm run dev` to start the frontend (Vite/React).
+
+### .env.example (Backend)
+```
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+ADMIN_EMAIL=your_admin_email
+ADMIN_PASSWORD=your_admin_password
+RECEIPT_EMAIL=your_receipt_account_email
+RAZORPAY_KEY_ID=your_razorpay_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+```
+
+---
+
+- The admin email/password and receipt account email will be hardcoded via env.
+- All user/admin features run on the same server.
+- See code for further details on endpoints and usage.

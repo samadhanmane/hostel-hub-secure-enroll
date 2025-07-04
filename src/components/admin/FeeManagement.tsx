@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { Plus, Edit, Trash2, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/utils/feeCalculator";
 import { Separator } from "@/components/ui/separator";
+import axios from "axios";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 interface FeeStructure {
   id: string;
@@ -21,129 +23,186 @@ interface FeeStructure {
   deposit: number;
 }
 
-interface SplitPaymentAccess {
-  id: string;
-  studentEmail: string;
-  installments: number;
-  isActive: boolean;
+interface SplitFeePermission {
+  _id: string;
+  email?: string;
+  studentId?: string;
+  createdAt?: string;
 }
 
 const FeeManagement = () => {
-  const [feeStructures, setFeeStructures] = useState<FeeStructure[]>([
-    {
-      id: '1',
-      hostelId: '1',
-      roomType: '2-sharing',
-      hostelYear: '2025-2026',
-      caste: 'General',
-      newStudentFee: 85000,
-      existingStudentFee: 85000,
-      deposit: 10000
-    },
-    {
-      id: '2',
-      hostelId: '1',
-      roomType: '3-sharing',
-      hostelYear: '2025-2026',
-      caste: 'General',
-      newStudentFee: 95000,
-      existingStudentFee: 95000,
-      deposit: 10000
-    }
-  ]);
-
-  const [splitAccess, setSplitAccess] = useState<SplitPaymentAccess[]>([]);
+  const [fees, setFees] = useState<any[]>([]);
+  const [splitPermissions, setSplitPermissions] = useState<SplitFeePermission[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [newFee, setNewFee] = useState({
     hostelId: '',
     roomType: '',
     hostelYear: '',
     caste: '',
-    newStudentFee: '',
-    existingStudentFee: '',
+    studentType: 'new',
+    amount: '',
     deposit: ''
   });
-  const [newSplitAccess, setNewSplitAccess] = useState({
-    studentEmail: '',
-    installments: '2'
+  const [newSplitPermission, setNewSplitPermission] = useState({
+    email: '',
+    studentId: ''
   });
   const [isAddingFee, setIsAddingFee] = useState(false);
   const [isAddingSplit, setIsAddingSplit] = useState(false);
   const { toast } = useToast();
+  const [editFee, setEditFee] = useState<any | null>(null);
+  const [editFeeData, setEditFeeData] = useState<any | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [hostels, setHostels] = useState<any[]>([]);
+  const [settings, setSettings] = useState({
+    roomTypes: [],
+    hostelYears: [],
+    castes: []
+  });
 
-  const hostels = [
-    { id: '1', name: 'MITAOE Boys Hostel-A' },
-    { id: '2', name: 'MITAOE Girls Hostel-A' },
-    { id: '3', name: 'PIT Boys Hostel-B' },
-  ];
-  const roomTypes = ['2-sharing', '3-sharing'];
-  const hostelYears = ['2025-2026', '2026-2027', '2027-2028'];
-  const castes = ['General', 'OBC', 'SC', 'ST', 'EWS'];
+  useEffect(() => {
+    axios.get('/api/dropdowns/hostels').then(res => setHostels(res.data));
+    axios.get('/api/admin/settings').then(res => setSettings(res.data));
+  }, []);
 
-  const handleAddFeeStructure = (e: React.FormEvent) => {
+  const fetchFees = async () => {
+    try {
+      const res = await axios.get("/api/admin/fees");
+      setFees(res.data);
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to fetch fees.", variant: "destructive" });
+    }
+  };
+
+  useEffect(() => { fetchFees(); }, []);
+
+  const handleAddFeeStructure = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newFee.hostelId || !newFee.roomType || !newFee.hostelYear || !newFee.caste) return;
+    if (!newFee.hostelId || !newFee.roomType || !newFee.hostelYear || !newFee.caste || !newFee.studentType || !newFee.amount) return;
 
-    const fee: FeeStructure = {
-      id: Date.now().toString(),
-      hostelId: newFee.hostelId,
-      roomType: newFee.roomType,
+    const fee = {
       hostelYear: newFee.hostelYear,
-      caste: newFee.caste,
-      newStudentFee: parseInt(newFee.newStudentFee),
-      existingStudentFee: parseInt(newFee.existingStudentFee),
+      roomType: newFee.roomType,
+      category: newFee.caste,
+      hostelName: hostels.find(h => h._id === newFee.hostelId)?.name || '',
+      studentType: newFee.studentType,
+      amount: parseInt(newFee.amount),
       deposit: parseInt(newFee.deposit)
     };
 
-    setFeeStructures([...feeStructures, fee]);
-    setNewFee({
-      hostelId: '',
-      roomType: '',
-      hostelYear: '',
-      caste: '',
-      newStudentFee: '',
-      existingStudentFee: '',
-      deposit: ''
-    });
-    setIsAddingFee(false);
-    
-    toast({
-      title: "Fee Structure Added",
-      description: "New fee structure has been added successfully.",
-    });
+    try {
+      await axios.post("/api/admin/fee", fee);
+      toast({ title: "Fee Added", description: `Fee has been added successfully.` });
+      setNewFee({
+        hostelId: '',
+        roomType: '',
+        hostelYear: '',
+        caste: '',
+        studentType: 'new',
+        amount: '',
+        deposit: ''
+      });
+      setIsAddingFee(false);
+      fetchFees();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.response?.data?.message || "Failed to add fee.", variant: "destructive" });
+    }
   };
 
-  const handleAddSplitAccess = (e: React.FormEvent) => {
+  const fetchSplitPermissions = async () => {
+    try {
+      const res = await axios.get('/api/admin/split-fee');
+      setSplitPermissions(res.data);
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to fetch split fee permissions.', variant: 'destructive' });
+    }
+  };
+
+  useEffect(() => { fetchSplitPermissions(); }, []);
+
+  const handleAddSplitPermission = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSplitAccess.studentEmail) return;
-
-    const access: SplitPaymentAccess = {
-      id: Date.now().toString(),
-      studentEmail: newSplitAccess.studentEmail,
-      installments: parseInt(newSplitAccess.installments),
-      isActive: true
-    };
-
-    setSplitAccess([...splitAccess, access]);
-    setNewSplitAccess({
-      studentEmail: '',
-      installments: '2'
-    });
-    setIsAddingSplit(false);
-    
-    toast({
-      title: "Split Payment Access Granted",
-      description: `${newSplitAccess.studentEmail} can now pay in installments.`,
-    });
+    if (!newSplitPermission.email && !newSplitPermission.studentId) return;
+    try {
+      await axios.post('/api/admin/split-fee', newSplitPermission);
+      toast({ title: 'Split Fee Permission Granted', description: 'Student can now pay in installments.' });
+      setNewSplitPermission({ email: '', studentId: '' });
+      setIsAddingSplit(false);
+      fetchSplitPermissions();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to grant permission.', variant: 'destructive' });
+    }
   };
 
-  const toggleSplitAccess = (id: string) => {
-    setSplitAccess(splitAccess.map(access => 
-      access.id === id ? { ...access, isActive: !access.isActive } : access
-    ));
+  const handleRevokeSplitPermission = async (perm: SplitFeePermission) => {
+    if (!window.confirm('Revoke split fee permission for this student?')) return;
+    try {
+      await axios.delete('/api/admin/split-fee', { data: { email: perm.email, studentId: perm.studentId } });
+      toast({ title: 'Permission Revoked', description: 'Split fee permission revoked.' });
+      fetchSplitPermissions();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to revoke permission.', variant: 'destructive' });
+    }
   };
 
-  const getHostelName = (hostelId: string) => {
-    return hostels.find(h => h.id === hostelId)?.name || 'Unknown Hostel';
+  const getHostelName = (fee: any) => {
+    if (fee.hostelId) {
+      return hostels.find(h => h._id === fee.hostelId)?.name || fee.hostelName || 'Unknown Hostel';
+    }
+    return fee.hostelName || 'Unknown Hostel';
+  };
+
+  const handleDeleteFee = async (id: string) => {
+    if (!window.confirm("Delete this fee?")) return;
+    try {
+      await axios.delete(`/api/admin/fee/${id}`);
+      toast({ title: "Fee Removed", description: "Fee has been removed successfully." });
+      fetchFees();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.response?.data?.message || "Failed to delete fee.", variant: "destructive" });
+    }
+  };
+
+  const openEditModal = async (fee: any) => {
+    // Fetch latest settings and hostels for up-to-date dropdowns
+    const [hostelsRes, settingsRes] = await Promise.all([
+      axios.get('/api/dropdowns/hostels'),
+      axios.get('/api/admin/settings')
+    ]);
+    setHostels(hostelsRes.data);
+    setSettings(settingsRes.data);
+
+    // Find the hostelId from hostelName
+    const hostel = hostelsRes.data.find((h: any) => h.name === fee.hostelName);
+    setEditFee(fee);
+    setEditFeeData({ ...fee, hostelId: hostel ? hostel._id : '' });
+    setIsEditModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditFee(null);
+    setEditFeeData(null);
+  };
+
+  const handleEditFeeChange = (field: string, value: any) => {
+    setEditFeeData((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveEditFee = async () => {
+    // Validate required fields
+    if (!editFeeData.hostelId || !editFeeData.roomType || !editFeeData.hostelYear || !editFeeData.category) {
+      toast({ title: "Missing Information", description: "Please fill in all required fields.", variant: "destructive" });
+      return;
+    }
+    try {
+      await axios.put(`/api/admin/fee/${editFee._id || editFee.id}`, editFeeData);
+      toast({ title: "Fee Updated", description: "Fee structure updated successfully." });
+      closeEditModal();
+      fetchFees();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.response?.data?.message || "Failed to update fee.", variant: "destructive" });
+    }
   };
 
   return (
@@ -177,7 +236,7 @@ const FeeManagement = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {hostels.map(hostel => (
-                        <SelectItem key={hostel.id} value={hostel.id}>{hostel.name}</SelectItem>
+                        <SelectItem key={hostel._id} value={hostel._id}>{hostel.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -189,7 +248,7 @@ const FeeManagement = () => {
                       <SelectValue placeholder="Select room type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {roomTypes.map(type => (
+                      {settings.roomTypes.map((type: string) => (
                         <SelectItem key={type} value={type}>{type}</SelectItem>
                       ))}
                     </SelectContent>
@@ -202,7 +261,7 @@ const FeeManagement = () => {
                       <SelectValue placeholder="Select year" />
                     </SelectTrigger>
                     <SelectContent>
-                      {hostelYears.map(year => (
+                      {settings.hostelYears.map((year: string) => (
                         <SelectItem key={year} value={year}>{year}</SelectItem>
                       ))}
                     </SelectContent>
@@ -215,7 +274,7 @@ const FeeManagement = () => {
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {castes.map(caste => (
+                      {settings.castes.map((caste: string) => (
                         <SelectItem key={caste} value={caste}>{caste}</SelectItem>
                       ))}
                     </SelectContent>
@@ -224,24 +283,27 @@ const FeeManagement = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="new-fee">New Student Fee</Label>
-                  <Input
-                    id="new-fee"
-                    type="number"
-                    value={newFee.newStudentFee}
-                    onChange={(e) => setNewFee({...newFee, newStudentFee: e.target.value})}
-                    placeholder="Enter fee amount"
-                    required
-                  />
+                  <Label htmlFor="student-type">Student Type</Label>
+                  <Select value={newFee.studentType} onValueChange={(value) => setNewFee({...newFee, studentType: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select student type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">New Student</SelectItem>
+                      <SelectItem value="existing">Existing Student</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
-                  <Label htmlFor="existing-fee">Existing Student Fee</Label>
+                  <Label htmlFor="amount">Amount</Label>
                   <Input
-                    id="existing-fee"
-                    type="number"
-                    value={newFee.existingStudentFee}
-                    onChange={(e) => setNewFee({...newFee, existingStudentFee: e.target.value})}
-                    placeholder="Enter fee amount"
+                    id="amount"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={newFee.amount}
+                    onChange={(e) => setNewFee({...newFee, amount: e.target.value.replace(/\D/g, '')})}
+                    placeholder="Enter amount"
                     required
                   />
                 </div>
@@ -249,9 +311,11 @@ const FeeManagement = () => {
                   <Label htmlFor="deposit">Deposit Amount</Label>
                   <Input
                     id="deposit"
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={newFee.deposit}
-                    onChange={(e) => setNewFee({...newFee, deposit: e.target.value})}
+                    onChange={(e) => setNewFee({...newFee, deposit: e.target.value.replace(/\D/g, '')})}
                     placeholder="Enter deposit amount"
                     required
                   />
@@ -276,28 +340,28 @@ const FeeManagement = () => {
                   <TableHead>Room Type</TableHead>
                   <TableHead>Hostel Year</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead>New Student Fee</TableHead>
-                  <TableHead>Existing Student Fee</TableHead>
+                  <TableHead>Student Type</TableHead>
+                  <TableHead>Amount</TableHead>
                   <TableHead>Deposit</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {feeStructures.map((fee) => (
-                  <TableRow key={fee.id}>
-                    <TableCell className="font-medium">{getHostelName(fee.hostelId)}</TableCell>
+                {fees.map((fee) => (
+                  <TableRow key={fee._id || fee.id}>
+                    <TableCell className="font-medium">{getHostelName(fee)}</TableCell>
                     <TableCell>{fee.roomType}</TableCell>
                     <TableCell>{fee.hostelYear}</TableCell>
-                    <TableCell>{fee.caste}</TableCell>
-                    <TableCell>{formatCurrency(fee.newStudentFee)}</TableCell>
-                    <TableCell>{formatCurrency(fee.existingStudentFee)}</TableCell>
+                    <TableCell>{fee.category}</TableCell>
+                    <TableCell>{fee.studentType === 'new' ? 'New Student' : 'Existing Student'}</TableCell>
+                    <TableCell>{formatCurrency(fee.amount)}</TableCell>
                     <TableCell>{formatCurrency(fee.deposit)}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => openEditModal(fee)}>
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDeleteFee(fee._id || fee.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -315,9 +379,7 @@ const FeeManagement = () => {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Split Payment Access</span>
-            <Button 
-              onClick={() => setIsAddingSplit(!isAddingSplit)}
-            >
+            <Button onClick={() => setIsAddingSplit(!isAddingSplit)}>
               <Users className="w-4 h-4 mr-2" />
               Grant Access
             </Button>
@@ -326,77 +388,70 @@ const FeeManagement = () => {
             Manage which students can pay fees in installments
           </CardDescription>
         </CardHeader>
-        
         <CardContent>
+          {/* Search/filter input */}
+          <div className="mb-4 flex items-center gap-2">
+            <Input
+              type="text"
+              placeholder="Search by email or student ID..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="max-w-xs"
+            />
+            {searchTerm && (
+              <Button variant="ghost" size="sm" onClick={() => setSearchTerm('')}>Clear</Button>
+            )}
+          </div>
           {isAddingSplit && (
-            <form onSubmit={handleAddSplitAccess} className="mb-6 p-4 border rounded-lg space-y-4">
+            <form onSubmit={handleAddSplitPermission} className="mb-6 p-4 border rounded-lg space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="student-email">Student Email</Label>
                   <Input
                     id="student-email"
                     type="email"
-                    value={newSplitAccess.studentEmail}
-                    onChange={(e) => setNewSplitAccess({...newSplitAccess, studentEmail: e.target.value})}
+                    value={newSplitPermission.email}
+                    onChange={(e) => setNewSplitPermission({ ...newSplitPermission, email: e.target.value })}
                     placeholder="Enter student email"
-                    required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="installments">Number of Installments</Label>
-                  <Select value={newSplitAccess.installments} onValueChange={(value) => setNewSplitAccess({...newSplitAccess, installments: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select installments" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="2">2 Installments</SelectItem>
-                      <SelectItem value="3">3 Installments</SelectItem>
-                      <SelectItem value="4">4 Installments</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="student-id">Student ID</Label>
+                  <Input
+                    id="student-id"
+                    type="text"
+                    value={newSplitPermission.studentId}
+                    onChange={(e) => setNewSplitPermission({ ...newSplitPermission, studentId: e.target.value })}
+                    placeholder="Enter student ID"
+                  />
                 </div>
               </div>
               <div className="flex space-x-2">
-                <Button type="submit">
-                  Grant Access
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setIsAddingSplit(false)}>
-                  Cancel
-                </Button>
+                <Button type="submit">Grant Access</Button>
+                <Button type="button" variant="outline" onClick={() => setIsAddingSplit(false)}>Cancel</Button>
               </div>
             </form>
           )}
-
-          {splitAccess.length > 0 ? (
+          {splitPermissions.length > 0 ? (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Student Email</TableHead>
-                    <TableHead>Installments</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Student ID</TableHead>
+                    <TableHead>Granted At</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {splitAccess.map((access) => (
-                    <TableRow key={access.id}>
-                      <TableCell className="font-medium">{access.studentEmail}</TableCell>
-                      <TableCell>{access.installments}</TableCell>
+                  {splitPermissions.map((perm) => (
+                    <TableRow key={perm._id}>
+                      <TableCell className="font-medium">{perm.email || '-'}</TableCell>
+                      <TableCell>{perm.studentId || '-'}</TableCell>
+                      <TableCell>{perm.createdAt ? new Date(perm.createdAt).toLocaleString() : '-'}</TableCell>
                       <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          access.isActive ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'
-                        }`}>
-                          {access.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => toggleSplitAccess(access.id)}
-                        >
-                          {access.isActive ? 'Deactivate' : 'Activate'}
+                        <Button variant="ghost" size="sm" onClick={() => handleRevokeSplitPermission(perm)}>
+                          Revoke
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -411,6 +466,120 @@ const FeeManagement = () => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Fee Structure</DialogTitle>
+            <DialogDescription>
+              Update the details for this fee structure. All fields are required.
+            </DialogDescription>
+          </DialogHeader>
+          {editFeeData && (
+            <form className="space-y-4" onSubmit={e => { e.preventDefault(); handleSaveEditFee(); }}>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <Label htmlFor="edit-hostel">Hostel Name</Label>
+                  <Select value={editFeeData.hostelId} onValueChange={value => handleEditFeeChange('hostelId', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select hostel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hostels.map(hostel => (
+                        <SelectItem key={hostel._id} value={hostel._id}>{hostel.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-room-type">Room Type</Label>
+                  <Select value={editFeeData.roomType} onValueChange={value => handleEditFeeChange('roomType', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select room type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {settings.roomTypes.map((type: string) => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-hostel-year">Hostel Year</Label>
+                  <Select value={editFeeData.hostelYear} onValueChange={value => handleEditFeeChange('hostelYear', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {settings.hostelYears.map((year: string) => (
+                        <SelectItem key={year} value={year}>{year}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-category">Category</Label>
+                  <Select value={editFeeData.category} onValueChange={value => handleEditFeeChange('category', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {settings.castes.map((caste: string) => (
+                        <SelectItem key={caste} value={caste}>{caste}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="edit-student-type">Student Type</Label>
+                  <Select
+                    value={editFeeData.studentType}
+                    onValueChange={(value) => handleEditFeeChange('studentType', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select student type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">New Student</SelectItem>
+                      <SelectItem value="existing">Existing Student</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-amount">Amount</Label>
+                  <Input
+                    id="edit-amount"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={editFeeData.amount}
+                    onChange={e => handleEditFeeChange('amount', e.target.value.replace(/\D/g, ''))}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-deposit">Deposit Amount</Label>
+                  <Input
+                    id="edit-deposit"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={editFeeData.deposit}
+                    onChange={e => handleEditFeeChange('deposit', e.target.value.replace(/\D/g, ''))}
+                    required
+                  />
+                </div>
+              </div>
+              <DialogFooter className="flex justify-end space-x-2 mt-4">
+                <Button type="button" variant="outline" onClick={closeEditModal}>Cancel</Button>
+                <Button type="submit">Save</Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
