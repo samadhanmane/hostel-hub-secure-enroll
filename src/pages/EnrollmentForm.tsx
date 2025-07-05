@@ -237,33 +237,36 @@ const EnrollmentForm = () => {
         return;
       }
 
-      // Create student record
-      const student: Student = {
-        id: generatedStudentId,
+      // Get college and hostel names
+      const college = colleges.find(c => c._id === formData.collegeId);
+      const hostel = hostels.find(h => h._id === formData.hostelId);
+      
+      // Send student data to backend
+      const studentData = {
         name: formData.name,
         email: formData.email,
-        contact: formData.contact,
-        collegeId: formData.collegeId,
-        yearOfAdmission: formData.yearOfAdmission,
-        academicYear: formData.academicYear,
-        branch: formData.branch,
+        college: college?.name || '',
+        year: formData.academicYear,
+        department: formData.branch,
+        contactNo: formData.contact,
         hostelType: formData.hostelType,
-        hostelId: formData.hostelId,
+        hostelName: hostel?.name || '',
         roomType: formData.roomType,
+        admissionYear: formData.yearOfAdmission,
         studentType: formData.studentType,
-        caste: formData.caste,
+        category: formData.caste,
         hostelYear: formData.hostelYear,
-        createdAt: new Date()
+        password: 'default123' // Default password for now
       };
 
-      // Save to localStorage for demo
-      const existingStudents = JSON.parse(localStorage.getItem('hostel_students') || '[]');
-      existingStudents.push(student);
-      localStorage.setItem('hostel_students', JSON.stringify(existingStudents));
+      console.log('Sending student data to backend:', studentData);
+      
+      const response = await axios.post(`${BACKEND_URL}/api/auth/register`, studentData);
+      console.log('Registration response:', response.data);
 
       toast({
         title: "Enrollment Successful!",
-        description: `Your Student ID is: ${generatedStudentId}`,
+        description: `Your Student ID is: ${response.data.studentId}`,
       });
 
       // Reset form
