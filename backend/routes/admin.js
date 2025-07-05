@@ -128,8 +128,26 @@ router.delete('/fee/:id', auth, adminOnly, async (req, res) => {
   res.json({ message: 'Fee deleted' });
 });
 
-// Get Settings
+// Get Settings (Admin only)
 router.get('/settings', auth, adminOnly, async (req, res) => {
+  let setting = await Setting.findOne().sort({ updatedAt: -1 });
+  if (!setting) {
+    // Return defaults if no settings exist
+    setting = {
+      academicYears: ['First Year', 'Second Year', 'Third Year', 'Fourth Year'],
+      branches: ['Computer Science', 'Information Technology', 'Electronics', 'Mechanical', 'Civil'],
+      castes: ['General', 'OBC', 'SC', 'ST', 'EWS'],
+      hostelYears: ['2025-2026', '2026-2027', '2027-2028'],
+      roomTypes: ['2 Person Sharing', '3 Person Sharing'],
+      admissionYears: ['2021', '2022', '2023', '2024', '2025'],
+      installments: 2
+    };
+  }
+  res.json(setting);
+});
+
+// Get Public Settings (for students)
+router.get('/public-settings', async (req, res) => {
   let setting = await Setting.findOne().sort({ updatedAt: -1 });
   if (!setting) {
     // Return defaults if no settings exist
