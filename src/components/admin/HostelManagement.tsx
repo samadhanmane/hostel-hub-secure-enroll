@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import axios from "axios";
+import api from "@/utils/api";
 import { Hostel } from "@/types";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
@@ -23,7 +23,7 @@ const HostelManagement = () => {
   // Fetch hostels and colleges from backend
   const fetchHostels = async () => {
     try {
-      const res = await axios.get(`${BACKEND_URL}/api/dropdowns/hostels`);
+      const res = await api.get('/api/dropdowns/hostels');
       setHostels(res.data);
     } catch (err) {
       toast({ title: "Error", description: "Failed to fetch hostels.", variant: "destructive" });
@@ -36,7 +36,7 @@ const HostelManagement = () => {
     e.preventDefault();
     if (!newHostel.name || !newHostel.type) return;
     try {
-      await axios.post(`${BACKEND_URL}/api/admin/hostel`, { name: newHostel.name, type: newHostel.type });
+      await api.post('/api/admin/hostel', { name: newHostel.name, type: newHostel.type });
       toast({ title: "Hostel Added", description: `${newHostel.name} has been added successfully.` });
       setNewHostel({ name: "", type: "boys" });
       setIsAdding(false);
@@ -49,7 +49,7 @@ const HostelManagement = () => {
   const handleDeleteHostel = async (id: string) => {
     if (!window.confirm("Delete this hostel?")) return;
     try {
-      await axios.delete(`${BACKEND_URL}/api/admin/hostel/${id}`);
+      await api.delete(`/api/admin/hostel/${id}`);
       toast({ title: "Hostel Removed", description: "Hostel has been removed successfully." });
       fetchHostels();
     } catch (err: any) {
