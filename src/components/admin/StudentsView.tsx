@@ -65,12 +65,17 @@ const StudentsView = () => {
       const endpoint = type === 'students' ? '/export-students' : '/export-payment-history';
       const filename = type === 'students' ? 'students_data' : 'payment_history';
       
+      console.log('Exporting:', type, 'to endpoint:', `${BACKEND_URL}/api/admin${endpoint}`);
+      console.log('Token:', localStorage.getItem('token'));
+      
       const response = await axios.get(`${BACKEND_URL}/api/admin${endpoint}`, {
         responseType: 'blob',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
+      
+      console.log('Export response received:', response.status);
       
       // Create a download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -81,9 +86,12 @@ const StudentsView = () => {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
+      
+      console.log('CSV file downloaded successfully');
     } catch (error) {
       console.error('Export failed:', error);
-      alert('Failed to export CSV file. Please try again.');
+      console.error('Error response:', error.response?.data);
+      alert(`Failed to export CSV file: ${error.response?.data?.message || error.message}`);
     } finally {
       setIsExporting(false);
     }

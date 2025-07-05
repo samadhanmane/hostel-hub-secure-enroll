@@ -234,11 +234,15 @@ router.delete('/users/:studentId', auth, adminOnly, async (req, res) => {
 // Export students data to CSV
 router.get('/export-students', auth, adminOnly, async (req, res) => {
   try {
+    console.log('Export students request received');
+    
     // Get all students with their payments
     const students = await User.find().sort({ createdAt: -1 });
+    console.log(`Found ${students.length} students`);
     
     // Get all payments
     const allPayments = await Payment.find({ status: 'success' }).populate('userId');
+    console.log(`Found ${allPayments.length} successful payments`);
     
     // Create CSV headers
     const headers = [
@@ -378,12 +382,12 @@ router.get('/export-payment-history', auth, adminOnly, async (req, res) => {
       'Student ID',
       'Student Name',
       'Student Email',
+      'College Name',
       'Payment Date',
       'Payment Amount',
       'Installment Number',
       'Payment Method',
       'Razorpay Payment ID',
-      'Receipt URL',
       'Hostel Year',
       'Room Type',
       'Category',
@@ -405,12 +409,12 @@ router.get('/export-payment-history', auth, adminOnly, async (req, res) => {
         `"${student.studentId}"`,
         `"${student.name}"`,
         `"${student.email}"`,
+        `"${student.college}"`,
         `"${new Date(payment.paymentDate).toLocaleDateString()}"`,
         payment.amount,
         payment.installment || 1,
         `"${payment.razorpayPaymentId ? 'Razorpay' : 'Manual'}"`,
         `"${payment.razorpayPaymentId || ''}"`,
-        `"${payment.receiptUrl || ''}"`,
         `"${payment.hostelYear || ''}"`,
         `"${payment.roomType || ''}"`,
         `"${payment.category || ''}"`,
