@@ -3,7 +3,7 @@ const Fee = require('../models/Fee');
 const SplitFeePermission = require('../models/SplitFeePermission');
 const Payment = require('../models/Payment');
 const User = require('../models/User');
-const { generateStudentId } = require('../utils/studentIdGenerator');
+// Remove the frontend student ID generator import since we'll use the backend one
 const Razorpay = require('razorpay');
 const { generateReceiptPdf } = require('../utils/receiptPdfGenerator');
 const { sendReceiptEmail } = require('../utils/mailer');
@@ -14,6 +14,58 @@ const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
+
+// Helper: Student ID generator with unique counter (same as in auth.js)
+async function generateStudentId({ year, college, roomType, hostelName, hostelType, hostelYear }) {
+  try {
+    // Get current count of students for this year
+    const yearCode = hostelYear.slice(0, 4);
+    const existingStudents = await User.countDocuments({ 
+      studentId: { $regex: `^${yearCode}` } 
+    });
+    
+    // Academic year mapping
+    const yearMapping = {
+      'First Year': 'FY',
+      'Second Year': 'SY', 
+      'Third Year': 'TY',
+      'Fourth Year': 'LY'
+    };
+    
+    // College code (first 2 letters of each word, max 4 chars)
+    const collegeCode = college
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase())
+      .slice(0, 2)
+      .join('');
+    
+    // Academic year code
+    const academicCode = yearMapping[year] || 'FY';
+    
+    // Room type code (first 2 letters)
+    const roomCode = roomType.substring(0, 2).toUpperCase();
+    
+    // Hostel type (B for boys, G for girls)
+    const hostelCode = hostelType === 'boys' ? 'B' : 'G';
+    
+    // Unique counter (4 digits, padded with zeros)
+    const counter = (existingStudents + 1).toString().padStart(4, '0');
+    
+    // Format: YYYY + ACADEMIC + COLLEGE + ROOM + HOSTEL + COUNTER
+    // Example: 2025FYMA2B0001, 2025FYMA2B0002, etc.
+    const studentId = `${yearCode}${academicCode}${collegeCode}${roomCode}${hostelCode}${counter}`;
+    
+    console.log('Generated Student ID:', studentId, 'for student count:', existingStudents + 1);
+    return studentId;
+  } catch (error) {
+    console.error('Error generating student ID:', error);
+    // Fallback to timestamp-based ID if counting fails
+    const timestamp = Date.now().toString().slice(-6);
+    const yearCode = hostelYear.slice(0, 4);
+    const academicCode = yearMapping[year] || 'FY';
+    return `${yearCode}${academicCode}T${timestamp}`;
+  }
+}
 
 // Calculate fee
 router.post('/calculate', async (req, res) => {
@@ -58,56 +110,86 @@ router.post('/pay', async (req, res) => {
   } = req.body;
   let user = await User.findOne({ email });
   if (!user) {
-    // Log all arguments before generating student ID
-    // Provide default values if any are missing
-    const safeHostelYear = hostelYear || '0000-0000';
-    const safeAcademicYear = academicYear || 'Unknown';
-    const safeCollege = college || 'Unknown';
-    const safeRoomCapacity = roomCapacity || 2;
-    const safeHostelType = hostelType || 'unknown';
-    // Generate student ID using the provided algorithm
-    const studentId = generateStudentId(safeHostelYear, safeAcademicYear, safeCollege, safeRoomCapacity, safeHostelType);
-    user = new User({
-      email,
-      studentId,
-      college: safeCollege,
-      year: safeAcademicYear,
-      hostelType: safeHostelType,
-      name,
-      department,
-      contactNo,
-      hostelName,
-      roomType,
-      admissionYear,
-      studentType,
-      category,
-      hostelYear: safeHostelYear,
-      fees: amount,
-      deposit,
-      splitFee: false,
-      password: 'notused', // placeholder
-    });
-    await user.save();
+    try {
+      // Log all arguments before generating student ID
+      console.log('Creating new user for payment:', { email, hostelYear, academicYear, college, roomCapacity, hostelType });
+      
+      // Provide default values if any are missing
+      const safeHostelYear = hostelYear || '0000-0000';
+      const safeAcademicYear = academicYear || 'Unknown';
+      const safeCollege = college || 'Unknown';
+      const safeRoomCapacity = roomCapacity || 2;
+      const safeHostelType = hostelType || 'unknown';
+      
+      // Generate unique student ID using the backend algorithm
+      const studentId = await generateStudentId({ 
+        year: safeAcademicYear, 
+        college: safeCollege, 
+        roomType: safeRoomCapacity.toString(), 
+        hostelName: hostelName || 'Unknown', 
+        hostelType: safeHostelType, 
+        hostelYear: safeHostelYear 
+      });
+      
+      // Check if student ID already exists (shouldn't happen with counter, but safety check)
+      const existingUserWithId = await User.findOne({ studentId });
+      if (existingUserWithId) {
+        console.error('Student ID conflict detected:', { studentId, existingEmail: existingUserWithId.email, newEmail: email });
+        return res.status(500).json({ message: 'Student ID generation conflict. Please try again.' });
+      }
+      
+      user = new User({
+        email,
+        studentId,
+        college: safeCollege,
+        year: safeAcademicYear,
+        hostelType: safeHostelType,
+        name,
+        department,
+        contactNo,
+        hostelName,
+        roomType,
+        admissionYear,
+        studentType,
+        category,
+        hostelYear: safeHostelYear,
+        fees: amount,
+        deposit,
+        splitFee: false,
+        password: 'notused', // placeholder
+      });
+      await user.save();
+      console.log('New user created successfully:', { email, studentId });
+    } catch (error) {
+      console.error('Error creating user during payment:', error);
+      return res.status(500).json({ message: 'Failed to create user account', error: error.message });
+    }
   } else {
-    // Log existing user found
+    console.log('Existing user found for payment:', { email, studentId: user.studentId });
   }
   // Save payment
-  const payment = new Payment({
-    userId: user._id,
-    amount,
-    status: 'success',
-    installment,
-    razorpayPaymentId,
-    hostelYear,
-    roomType,
-    category,
-    hostelName,
-    studentType,
-  });
-  await payment.save();
+  try {
+    const payment = new Payment({
+      userId: user._id,
+      amount,
+      status: 'success',
+      installment,
+      razorpayPaymentId,
+      hostelYear,
+      roomType,
+      category,
+      hostelName,
+      studentType,
+    });
+    await payment.save();
+    console.log('Payment saved successfully:', { paymentId: payment._id, amount, studentId: user.studentId });
 
-  // Respond to frontend immediately
-  res.json({ success: true, paymentId: payment._id, studentId: user.studentId, razorpayPaymentId });
+    // Respond to frontend immediately
+    res.json({ success: true, paymentId: payment._id, studentId: user.studentId, razorpayPaymentId });
+  } catch (error) {
+    console.error('Error saving payment:', error);
+    return res.status(500).json({ message: 'Failed to save payment', error: error.message });
+  }
 
   // Generate and send receipt PDF via email in the background
   (async () => {

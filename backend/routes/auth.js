@@ -41,8 +41,8 @@ router.post('/register', async (req, res) => {
     if (user) {
       return res.status(400).json({ message: 'User already exists' });
     }
-    // Generate studentId (example: 2025FYMA2B)
-    const studentId = generateStudentId({ year, college, roomType, hostelName, hostelType, hostelYear });
+    // Generate unique studentId
+    const studentId = await generateStudentId({ year, college, roomType, hostelName, hostelType, hostelYear });
     const hashedPassword = await bcrypt.hash(password, 10);
     user = new User({ name, email, studentId, college, year, department, contactNo, hostelType, hostelName, roomType, admissionYear, studentType, category, hostelYear, password: hashedPassword, fees: 0, deposit: 0 });
     await user.save();
@@ -64,17 +64,63 @@ router.post('/login', async (req, res) => {
   res.json({ token, studentId: user.studentId });
 });
 
-// Helper: Student ID generator
-function generateStudentId({ year, college, roomType, hostelName, hostelType, hostelYear }) {
-  // Example: 2025FYMA2B
-  // You can customize this logic as needed
-  const yearCode = hostelYear.slice(0, 4);
-  const yearShort = year[0].toUpperCase();
-  const collegeShort = college.split(' ').map(w => w[0].toUpperCase()).join('');
-  const roomShort = roomType[0];
-  const hostelShort = hostelName.split(' ')[0][0].toUpperCase();
-  const typeShort = hostelType[0].toUpperCase();
-  return `${yearCode}${yearShort}${collegeShort}${roomShort}${hostelShort}${typeShort}`;
+// Helper: Student ID generator with unique counter
+async function generateStudentId({ year, college, roomType, hostelName, hostelType, hostelYear }) {
+  try {
+    // Get current count of students for this year
+    const yearCode = hostelYear.slice(0, 4);
+    const existingStudents = await User.countDocuments({ 
+      studentId: { $regex: `^${yearCode}` } 
+    });
+    
+    // Academic year mapping
+    const yearMapping = {
+      'First Year': 'FY',
+      'Second Year': 'SY', 
+      'Third Year': 'TY',
+      'Fourth Year': 'LY'
+    };
+    
+    // Extract student name initials (first 3 letters)
+    const nameParts = college.split(' ');
+    const nameInitials = nameParts
+      .map(word => word.charAt(0).toUpperCase())
+      .slice(0, 3)
+      .join('');
+    
+    // College code (first 2 letters of each word, max 4 chars)
+    const collegeCode = college
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase())
+      .slice(0, 2)
+      .join('');
+    
+    // Academic year code
+    const academicCode = yearMapping[year] || 'FY';
+    
+    // Room type code (first 2 letters)
+    const roomCode = roomType.substring(0, 2).toUpperCase();
+    
+    // Hostel type (B for boys, G for girls)
+    const hostelCode = hostelType === 'boys' ? 'B' : 'G';
+    
+    // Unique counter (4 digits, padded with zeros)
+    const counter = (existingStudents + 1).toString().padStart(4, '0');
+    
+    // Format: YYYY + ACADEMIC + COLLEGE + ROOM + HOSTEL + COUNTER
+    // Example: 2025FYMA2B0001, 2025FYMA2B0002, etc.
+    const studentId = `${yearCode}${academicCode}${collegeCode}${roomCode}${hostelCode}${counter}`;
+    
+    console.log('Generated Student ID:', studentId, 'for student count:', existingStudents + 1);
+    return studentId;
+  } catch (error) {
+    console.error('Error generating student ID:', error);
+    // Fallback to timestamp-based ID if counting fails
+    const timestamp = Date.now().toString().slice(-6);
+    const yearCode = hostelYear.slice(0, 4);
+    const academicCode = yearMapping[year] || 'FY';
+    return `${yearCode}${academicCode}T${timestamp}`;
+  }
 }
 
 // GET /student/by-email?email=...&studentId=...
