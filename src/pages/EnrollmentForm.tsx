@@ -128,22 +128,53 @@ const EnrollmentForm = () => {
   }, [user?.email]);
 
   useEffect(() => {
-    axios.get(`${BACKEND_URL}/api/dropdowns/colleges`).then(res => setColleges(res.data)).catch(() => setColleges([]));
-    axios.get(`${BACKEND_URL}/api/dropdowns/hostels`).then(res => setHostels(res.data)).catch(() => setHostels([]));
-    axios.get(`${BACKEND_URL}/api/dropdowns/room-types`).then(res => setRoomTypes(res.data)).catch(() => setRoomTypes([]));
-    axios.get(`${BACKEND_URL}/api/dropdowns/categories`).then(res => setCategories(res.data)).catch(() => setCategories([]));
-    axios.get(`${BACKEND_URL}/api/dropdowns/years`).then(res => setYears(res.data)).catch(() => setYears([]));
-    axios.get(`${BACKEND_URL}/api/dropdowns/departments`).then(res => setDepartments(res.data)).catch(() => setDepartments([]));
-    axios.get(`${BACKEND_URL}/api/admin/fees`).then(res => setFees(res.data)).catch(() => setFees([]));
-    axios.get(`${BACKEND_URL}/api/admin/settings`).then(res => setSettings(res.data)).catch(() => setSettings({
-      academicYears: [],
-      admissionYears: [],
-      branches: [],
-      castes: [],
-      hostelYears: [],
-      roomTypes: [],
-      installments: 2
-    }));
+    // Fetch all dropdown data
+    const fetchDropdownData = async () => {
+      try {
+        const [
+          collegesRes,
+          hostelsRes,
+          roomTypesRes,
+          categoriesRes,
+          yearsRes,
+          departmentsRes,
+          feesRes,
+          settingsRes
+        ] = await Promise.all([
+          axios.get(`${BACKEND_URL}/api/dropdowns/colleges`),
+          axios.get(`${BACKEND_URL}/api/dropdowns/hostels`),
+          axios.get(`${BACKEND_URL}/api/dropdowns/room-types`),
+          axios.get(`${BACKEND_URL}/api/dropdowns/categories`),
+          axios.get(`${BACKEND_URL}/api/dropdowns/years`),
+          axios.get(`${BACKEND_URL}/api/dropdowns/departments`),
+          axios.get(`${BACKEND_URL}/api/admin/fees`),
+          axios.get(`${BACKEND_URL}/api/admin/settings`)
+        ]);
+
+        setColleges(collegesRes.data);
+        setHostels(hostelsRes.data);
+        setRoomTypes(roomTypesRes.data);
+        setCategories(categoriesRes.data);
+        setYears(yearsRes.data);
+        setDepartments(departmentsRes.data);
+        setFees(feesRes.data);
+        setSettings(settingsRes.data);
+      } catch (error) {
+        console.error('Error fetching dropdown data:', error);
+        // Set default values if API calls fail
+        setSettings({
+          academicYears: [],
+          admissionYears: [],
+          branches: [],
+          castes: [],
+          hostelYears: [],
+          roomTypes: [],
+          installments: 2
+        });
+      }
+    };
+
+    fetchDropdownData();
   }, []);
 
   // Refetch fees from backend every time a key selection changes
@@ -258,31 +289,31 @@ const EnrollmentForm = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto px-4 py-4 md:py-8 max-w-4xl">
       {existingStudent?.studentId && (
-        <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-4 text-lg font-bold text-center">
+        <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-4 text-base md:text-lg font-bold text-center">
           Your Student ID: {existingStudent.studentId}
         </div>
       )}
       <Card className="shadow-lg">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold flex items-center justify-center space-x-2">
-            <GraduationCap className="w-6 h-6" />
+        <CardHeader className="text-center px-4 md:px-6">
+          <CardTitle className="text-xl md:text-2xl font-bold flex items-center justify-center space-x-2">
+            <GraduationCap className="w-5 h-5 md:w-6 md:h-6" />
             <span>Hostel Enrollment Form</span>
           </CardTitle>
-          <CardDescription>Please fill in all the required information for hostel enrollment</CardDescription>
+          <CardDescription className="text-sm md:text-base">Please fill in all the required information for hostel enrollment</CardDescription>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="px-4 md:px-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Personal Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center space-x-2">
-                <User className="w-5 h-5" />
+              <h3 className="text-base md:text-lg font-semibold flex items-center space-x-2">
+                <User className="w-4 h-4 md:w-5 md:h-5" />
                 <span>Personal Information</span>
               </h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                 <div>
                   <Label htmlFor="name">Student Name *</Label>
                   <Input
@@ -337,12 +368,12 @@ const EnrollmentForm = () => {
 
             {/* Academic Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center space-x-2">
-                <Building className="w-5 h-5" />
+              <h3 className="text-base md:text-lg font-semibold flex items-center space-x-2">
+                <Building className="w-4 h-4 md:w-5 md:h-5" />
                 <span>Academic Information</span>
               </h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                 <div>
                   <Label htmlFor="college">College Name *</Label>
                   <Select value={formData.collegeId} onValueChange={(value) => setFormData({...formData, collegeId: value, hostelId: ""})}>
@@ -364,8 +395,8 @@ const EnrollmentForm = () => {
                       <SelectValue placeholder="Select admission year" />
                     </SelectTrigger>
                     <SelectContent>
-                      {settings.admissionYears.map(year => (
-                        <SelectItem key={year} value={year}>{year}</SelectItem>
+                      {years.map(year => (
+                        <SelectItem key={year._id} value={year.name}>{year.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -378,8 +409,8 @@ const EnrollmentForm = () => {
                       <SelectValue placeholder="Select academic year" />
                     </SelectTrigger>
                     <SelectContent>
-                      {settings.academicYears.map(year => (
-                        <SelectItem key={year} value={year}>{year}</SelectItem>
+                      {years.map(year => (
+                        <SelectItem key={year._id} value={year.name}>{year.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -392,8 +423,8 @@ const EnrollmentForm = () => {
                       <SelectValue placeholder="Select branch" />
                     </SelectTrigger>
                     <SelectContent>
-                      {settings.branches.map(branch => (
-                        <SelectItem key={branch} value={branch}>{branch}</SelectItem>
+                      {departments.map(dept => (
+                        <SelectItem key={dept._id} value={dept.name}>{dept.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -406,8 +437,8 @@ const EnrollmentForm = () => {
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {settings.castes.map(caste => (
-                        <SelectItem key={caste} value={caste}>{caste}</SelectItem>
+                      {categories.map(category => (
+                        <SelectItem key={category._id} value={category.name}>{category.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -419,12 +450,12 @@ const EnrollmentForm = () => {
 
             {/* Hostel Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center space-x-2">
-                <Bed className="w-5 h-5" />
+              <h3 className="text-base md:text-lg font-semibold flex items-center space-x-2">
+                <Bed className="w-4 h-4 md:w-5 md:h-5" />
                 <span>Hostel Information</span>
               </h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                 <div>
                   <Label htmlFor="hostelType">Hostel Type *</Label>
                   <Select value={formData.hostelType} onValueChange={(value: 'boys' | 'girls') => setFormData({...formData, hostelType: value, hostelId: ""})}>
@@ -459,8 +490,8 @@ const EnrollmentForm = () => {
                       <SelectValue placeholder="Select room type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {settings.roomTypes.map(roomType => (
-                        <SelectItem key={roomType} value={roomType}>{roomType}</SelectItem>
+                      {roomTypes.map(roomType => (
+                        <SelectItem key={roomType._id} value={roomType.name}>{roomType.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -473,8 +504,8 @@ const EnrollmentForm = () => {
                       <SelectValue placeholder="Select hostel year" />
                     </SelectTrigger>
                     <SelectContent>
-                      {settings.hostelYears.map(year => (
-                        <SelectItem key={year} value={year}>{year}</SelectItem>
+                      {years.map(year => (
+                        <SelectItem key={year._id} value={year.name}>{year.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -486,9 +517,9 @@ const EnrollmentForm = () => {
             {generatedStudentId && (
               <>
                 <Separator />
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <Label className="text-sm font-medium">Generated Student ID</Label>
-                  <div className="text-2xl font-bold mt-1">{generatedStudentId}</div>
+                <div className="text-center p-3 md:p-4 bg-muted rounded-lg">
+                  <Label className="text-xs md:text-sm font-medium">Generated Student ID</Label>
+                  <div className="text-lg md:text-2xl font-bold mt-1 break-all">{generatedStudentId}</div>
                 </div>
               </>
             )}
@@ -498,20 +529,20 @@ const EnrollmentForm = () => {
               <>
                 <Separator />
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Fee Details</h3>
-                  <div className="bg-muted p-4 rounded-lg space-y-2">
-                    <div className="flex justify-between">
+                  <h3 className="text-base md:text-lg font-semibold">Fee Details</h3>
+                  <div className="bg-muted p-3 md:p-4 rounded-lg space-y-2">
+                    <div className="flex justify-between text-sm md:text-base">
                       <span>Base Fee:</span>
                       <span className="font-semibold">{formatCurrency(feeDetails.baseFee)}</span>
                     </div>
                     {feeDetails.deposit > 0 && (
-                      <div className="flex justify-between">
+                      <div className="flex justify-between text-sm md:text-base">
                         <span>Deposit:</span>
                         <span className="font-semibold">{formatCurrency(feeDetails.deposit)}</span>
                       </div>
                     )}
                     <Separator />
-                    <div className="flex justify-between text-lg font-bold">
+                    <div className="flex justify-between text-base md:text-lg font-bold">
                       <span>Total Fee:</span>
                       <span className="text-accent-foreground">{formatCurrency(feeDetails.totalFee)}</span>
                     </div>
@@ -522,7 +553,7 @@ const EnrollmentForm = () => {
 
             <Button
               type="button"
-              className="w-full py-6 text-lg"
+              className="w-full py-4 md:py-6 text-base md:text-lg"
               onClick={handleGoToPaymentPage}
               disabled={isPaying || feeDetails.totalFee <= 0}
             >

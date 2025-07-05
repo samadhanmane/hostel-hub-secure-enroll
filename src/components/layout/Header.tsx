@@ -43,25 +43,35 @@ const Header = () => {
         </div>
         
         {user && (
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 md:space-x-4">
+            {/* Mobile: Show only essential info */}
+            <div className="hidden md:flex items-center space-x-2">
               <User className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm font-medium">{user.email}</span>
               <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
                 {user.role}
               </span>
             </div>
+            
+            {/* Mobile: Show only role badge */}
+            <div className="md:hidden">
+              <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
+                {user.role}
+              </span>
+            </div>
+            
             {user.role === 'user' && studentId && (
-              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded text-sm font-mono">ID: {studentId}</span>
+              <span className="hidden md:inline bg-blue-100 text-blue-800 px-3 py-1 rounded text-sm font-mono">ID: {studentId}</span>
             )}
+            
             <Button
               variant="outline"
               size="sm"
               onClick={handleLogout}
-              className="flex items-center space-x-1"
+              className="flex items-center space-x-1 px-2 md:px-3"
             >
               <LogOut className="w-4 h-4" />
-              <span>Logout</span>
+              <span className="hidden sm:inline">Logout</span>
             </Button>
           </div>
         )}
