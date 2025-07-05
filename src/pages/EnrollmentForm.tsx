@@ -129,7 +129,7 @@ const EnrollmentForm = () => {
   }, [user?.email]);
 
   useEffect(() => {
-    // Fetch all dropdown data from admin settings and individual models
+    // Fetch all dropdown data from individual models and admin settings
     const fetchDropdownData = async () => {
       try {
         console.log('Fetching dropdown data from:', BACKEND_URL);
@@ -150,8 +150,11 @@ const EnrollmentForm = () => {
           settings: settingsRes.data
         });
 
+        // Set data from individual models (Colleges and Hostels)
         setColleges(collegesRes.data);
         setHostels(hostelsRes.data);
+        
+        // Set data from admin settings
         setSettings(settingsRes.data);
         
         // Convert settings arrays to the format expected by dropdowns
@@ -172,6 +175,8 @@ const EnrollmentForm = () => {
         });
         
         // Set default values if API calls fail
+        setColleges([]);
+        setHostels([]);
         setSettings({
           academicYears: [],
           admissionYears: [],
@@ -181,6 +186,11 @@ const EnrollmentForm = () => {
           roomTypes: [],
           installments: 2
         });
+        setYears([]);
+        setDepartments([]);
+        setCategories([]);
+        setRoomTypes([]);
+        setFees([]);
         setIsLoading(false);
       }
     };
