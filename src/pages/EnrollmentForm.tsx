@@ -129,7 +129,7 @@ const EnrollmentForm = () => {
   }, [user?.email]);
 
   useEffect(() => {
-    // Fetch all dropdown data
+    // Fetch all dropdown data from individual model APIs
     const fetchDropdownData = async () => {
       try {
         console.log('Fetching dropdown data from:', BACKEND_URL);
@@ -137,30 +137,45 @@ const EnrollmentForm = () => {
         const [
           collegesRes,
           hostelsRes,
-          settingsRes
+          roomTypesRes,
+          categoriesRes,
+          yearsRes,
+          departmentsRes
         ] = await Promise.all([
           axios.get(`${BACKEND_URL}/api/dropdowns/colleges`),
           axios.get(`${BACKEND_URL}/api/dropdowns/hostels`),
-          axios.get(`${BACKEND_URL}/api/admin/public-settings`)
+          axios.get(`${BACKEND_URL}/api/dropdowns/room-types`),
+          axios.get(`${BACKEND_URL}/api/dropdowns/categories`),
+          axios.get(`${BACKEND_URL}/api/dropdowns/years`),
+          axios.get(`${BACKEND_URL}/api/dropdowns/departments`)
         ]);
 
         console.log('Dropdown data received:', {
           colleges: collegesRes.data.length,
           hostels: hostelsRes.data.length,
-          settings: settingsRes.data
+          roomTypes: roomTypesRes.data.length,
+          categories: categoriesRes.data.length,
+          years: yearsRes.data.length,
+          departments: departmentsRes.data.length
         });
 
         setColleges(collegesRes.data);
         setHostels(hostelsRes.data);
-        setSettings(settingsRes.data);
+        setRoomTypes(roomTypesRes.data);
+        setCategories(categoriesRes.data);
+        setYears(yearsRes.data);
+        setDepartments(departmentsRes.data);
         
-        // Convert settings arrays to the format expected by dropdowns
-        setYears(settingsRes.data.admissionYears?.map(name => ({ _id: name, name })) || []);
-        setDepartments(settingsRes.data.branches?.map(name => ({ _id: name, name })) || []);
-        setCategories(settingsRes.data.castes?.map(name => ({ _id: name, name })) || []);
-        setRoomTypes(settingsRes.data.roomTypes?.map(name => ({ _id: name, name })) || []);
-        
-        // Set default fees since we can't access admin endpoints
+        // Set default settings and fees
+        setSettings({
+          academicYears: yearsRes.data.map(y => y.name),
+          admissionYears: yearsRes.data.map(y => y.name),
+          branches: departmentsRes.data.map(d => d.name),
+          castes: categoriesRes.data.map(c => c.name),
+          hostelYears: yearsRes.data.map(y => y.name),
+          roomTypes: roomTypesRes.data.map(rt => rt.name),
+          installments: 2
+        });
         setFees([]);
         setIsLoading(false);
       } catch (error) {

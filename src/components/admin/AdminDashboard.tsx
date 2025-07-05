@@ -2,12 +2,16 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Users, Building, Bed, DollarSign, Settings, FileText } from "lucide-react";
+import { Users, Building, Bed, DollarSign, Settings, FileText, Calendar, GraduationCap, Tag, Home } from "lucide-react";
 import CollegeManagement from "./CollegeManagement";
 import HostelManagement from "./HostelManagement";
 import FeeManagement from "./FeeManagement";
 import StudentsView from "./StudentsView";
 import AdminSettings from "./AdminSettings";
+import DepartmentManagement from "./DepartmentManagement";
+import CategoryManagement from "./CategoryManagement";
+import RoomTypeManagement from "./RoomTypeManagement";
+import YearManagement from "./YearManagement";
 import api from "@/utils/api";
 
 const AdminDashboard = () => {
@@ -102,24 +106,40 @@ const AdminDashboard = () => {
 
       {/* Main Admin Interface */}
       <Tabs defaultValue="students" className="space-y-4 md:space-y-6">
-        <TabsList className="grid w-full grid-cols-5 h-auto md:h-10">
-          <TabsTrigger value="students" className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-1 py-2 md:py-0 text-xs md:text-sm">
+        <TabsList className="grid w-full grid-cols-9 h-auto md:h-10 overflow-x-auto">
+          <TabsTrigger value="students" className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-1 py-2 md:py-0 text-xs md:text-sm whitespace-nowrap">
             <Users className="w-3 h-3 md:w-4 md:h-4" />
             <span>Students</span>
           </TabsTrigger>
-          <TabsTrigger value="colleges" className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-1 py-2 md:py-0 text-xs md:text-sm">
+          <TabsTrigger value="colleges" className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-1 py-2 md:py-0 text-xs md:text-sm whitespace-nowrap">
             <Building className="w-3 h-3 md:w-4 md:h-4" />
             <span>Colleges</span>
           </TabsTrigger>
-          <TabsTrigger value="hostels" className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-1 py-2 md:py-0 text-xs md:text-sm">
+          <TabsTrigger value="hostels" className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-1 py-2 md:py-0 text-xs md:text-sm whitespace-nowrap">
             <Bed className="w-3 h-3 md:w-4 md:h-4" />
             <span>Hostels</span>
           </TabsTrigger>
-          <TabsTrigger value="fees" className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-1 py-2 md:py-0 text-xs md:text-sm">
+          <TabsTrigger value="departments" className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-1 py-2 md:py-0 text-xs md:text-sm whitespace-nowrap">
+            <GraduationCap className="w-3 h-3 md:w-4 md:h-4" />
+            <span>Depts</span>
+          </TabsTrigger>
+          <TabsTrigger value="categories" className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-1 py-2 md:py-0 text-xs md:text-sm whitespace-nowrap">
+            <Tag className="w-3 h-3 md:w-4 md:h-4" />
+            <span>Categories</span>
+          </TabsTrigger>
+          <TabsTrigger value="roomtypes" className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-1 py-2 md:py-0 text-xs md:text-sm whitespace-nowrap">
+            <Home className="w-3 h-3 md:w-4 md:h-4" />
+            <span>Room Types</span>
+          </TabsTrigger>
+          <TabsTrigger value="years" className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-1 py-2 md:py-0 text-xs md:text-sm whitespace-nowrap">
+            <Calendar className="w-3 h-3 md:w-4 md:h-4" />
+            <span>Years</span>
+          </TabsTrigger>
+          <TabsTrigger value="fees" className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-1 py-2 md:py-0 text-xs md:text-sm whitespace-nowrap">
             <DollarSign className="w-3 h-3 md:w-4 md:h-4" />
             <span>Fees</span>
           </TabsTrigger>
-          <TabsTrigger value="settings" className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-1 py-2 md:py-0 text-xs md:text-sm">
+          <TabsTrigger value="settings" className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-1 py-2 md:py-0 text-xs md:text-sm whitespace-nowrap">
             <Settings className="w-3 h-3 md:w-4 md:h-4" />
             <span>Settings</span>
           </TabsTrigger>
@@ -135,6 +155,22 @@ const AdminDashboard = () => {
 
         <TabsContent value="hostels">
           <HostelManagement />
+        </TabsContent>
+
+        <TabsContent value="departments">
+          <DepartmentManagement />
+        </TabsContent>
+
+        <TabsContent value="categories">
+          <CategoryManagement />
+        </TabsContent>
+
+        <TabsContent value="roomtypes">
+          <RoomTypeManagement />
+        </TabsContent>
+
+        <TabsContent value="years">
+          <YearManagement />
         </TabsContent>
 
         <TabsContent value="fees">
