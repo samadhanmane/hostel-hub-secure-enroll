@@ -5,6 +5,7 @@ const Payment = require('../models/Payment');
 const User = require('../models/User');
 // Remove the frontend student ID generator import since we'll use the backend one
 const Razorpay = require('razorpay');
+const nodemailer = require('nodemailer');
 const { generateReceiptPdf } = require('../utils/receiptPdfGenerator');
 const { sendReceiptEmail } = require('../utils/mailer');
 
@@ -194,6 +195,8 @@ router.post('/pay', async (req, res) => {
   // Generate and send receipt PDF via email in the background
   (async () => {
     try {
+      console.log('Starting email receipt generation for payment:', payment._id);
+      
       const receiptData = {
         paymentId: payment._id.toString(),
         razorpayPaymentId,
@@ -208,17 +211,33 @@ router.post('/pay', async (req, res) => {
         category,
         hostelYear,
       };
+      
+      console.log('Generating PDF receipt...');
       const pdfBuffer = await generateReceiptPdf(receiptData);
+      console.log('PDF generated successfully, size:', pdfBuffer.length, 'bytes');
+      
       const subject = 'Hostel Hub Payment Receipt';
       const text = 'Thank you for your payment. Please find your receipt attached.';
-      // Send only to student
+      
+      // Send to student
+      console.log('Sending receipt to student:', email);
       await sendReceiptEmail(email, subject, text, pdfBuffer, 'HostelHub_Receipt.pdf');
-      // Send only to RECEIPT_EMAIL if different from student
+      
+      // Send to admin if different from student
       if (process.env.RECEIPT_EMAIL && process.env.RECEIPT_EMAIL !== email) {
+        console.log('Sending receipt to admin:', process.env.RECEIPT_EMAIL);
         await sendReceiptEmail(process.env.RECEIPT_EMAIL, subject, `Receipt for student: ${email}`, pdfBuffer, 'HostelHub_Receipt.pdf');
       }
+      
+      console.log('All receipt emails sent successfully');
     } catch (err) {
-      console.error('Failed to send receipt email:', err);
+      console.error('Failed to send receipt email:', {
+        error: err.message,
+        stack: err.stack,
+        paymentId: payment._id,
+        studentEmail: email
+      });
+      // Don't throw error here as payment is already successful
     }
   })();
 });
@@ -307,6 +326,49 @@ router.get('/payment-history', async (req, res) => {
   if (!user) return res.status(404).json({ message: 'Student not found' });
   const payments = await Payment.find({ userId: user._id }).sort({ paymentDate: -1 });
   res.json(payments);
+});
+
+// Test email configuration
+router.get('/test-email', async (req, res) => {
+  try {
+    console.log('Testing email configuration...');
+    console.log('EMAIL_USER:', process.env.EMAIL_USER ? 'set' : 'missing');
+    console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? 'set' : 'missing');
+    console.log('RECEIPT_EMAIL:', process.env.RECEIPT_EMAIL || 'not set');
+    
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      return res.status(500).json({ 
+        message: 'Email configuration missing',
+        EMAIL_USER: process.env.EMAIL_USER ? 'set' : 'missing',
+        EMAIL_PASS: process.env.EMAIL_PASS ? 'set' : 'missing'
+      });
+    }
+    
+    // Test email transport
+    const testTransporter = nodemailer.createTransporter({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+    
+    // Verify credentials
+    await testTransporter.verify();
+    
+    res.json({ 
+      message: 'Email configuration is valid',
+      EMAIL_USER: process.env.EMAIL_USER,
+      RECEIPT_EMAIL: process.env.RECEIPT_EMAIL || 'not set'
+    });
+  } catch (error) {
+    console.error('Email test failed:', error);
+    res.status(500).json({ 
+      message: 'Email configuration test failed',
+      error: error.message,
+      code: error.code
+    });
+  }
 });
 
 // Download receipt PDF by paymentId
