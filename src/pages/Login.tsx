@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const [studentEmail, setStudentEmail] = useState("");
-  const [adminEmail, setAdminEmail] = useState("admin@hostelhub.com");
+  const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();

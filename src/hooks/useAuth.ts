@@ -52,6 +52,7 @@ export const useAuthState = (): AuthContextType => {
         localStorage.setItem('hostel_user', JSON.stringify(adminUser));
         localStorage.setItem('token', data.token);
         localStorage.setItem('role', 'admin');
+        localStorage.setItem('userEmail', email);
         setIsLoading(false);
         return true;
       }
@@ -70,6 +71,7 @@ export const useAuthState = (): AuthContextType => {
         // Generate a temporary token for student (in production, use proper auth)
         localStorage.setItem('token', 'temp-student-token');
         localStorage.setItem('role', 'user');
+        localStorage.setItem('userEmail', email);
         setIsLoading(false);
         return true;
       }
@@ -88,6 +90,7 @@ export const useAuthState = (): AuthContextType => {
     localStorage.removeItem('hostel_user');
     localStorage.removeItem('token');
     localStorage.removeItem('role');
+    localStorage.removeItem('userEmail');
   };
 
   return { user, login, logout, isLoading };

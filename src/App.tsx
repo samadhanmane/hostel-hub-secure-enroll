@@ -18,7 +18,15 @@ const ProtectedRoute = ({ children, role }: { children: React.ReactNode; role: s
 
 const RequireAuth = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('token');
+  const userRole = localStorage.getItem('role');
+  
   if (!token) return <Navigate to="/login" />;
+  
+  // Redirect based on role
+  if (userRole === 'admin') {
+    return <Navigate to="/admin-dashboard" />;
+  }
+  
   return <>{children}</>;
 };
 
