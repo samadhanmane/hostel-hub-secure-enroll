@@ -98,7 +98,19 @@ const StudentsView = () => {
     } catch (error) {
       console.error('Export failed:', error);
       console.error('Error response:', error.response?.data);
-      alert(`Failed to export CSV file: ${error.response?.data?.message || error.message}`);
+      
+      let errorMessage = 'Failed to export CSV file';
+      if (error.response?.status === 500) {
+        errorMessage = 'Server error occurred while generating CSV. Please try again.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Authentication failed. Please login again.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(errorMessage);
     } finally {
       setIsExporting(false);
     }

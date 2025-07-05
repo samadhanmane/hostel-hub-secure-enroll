@@ -240,9 +240,15 @@ router.get('/export-students', auth, adminOnly, async (req, res) => {
     const students = await User.find().sort({ createdAt: -1 });
     console.log(`Found ${students.length} students`);
     
-    // Get all payments
-    const allPayments = await Payment.find({ status: 'success' }).populate('userId');
-    console.log(`Found ${allPayments.length} successful payments`);
+    // Get all payments - handle case where there might be no payments
+    let allPayments = [];
+    try {
+      allPayments = await Payment.find({ status: 'success' }).populate('userId');
+      console.log(`Found ${allPayments.length} successful payments`);
+    } catch (paymentError) {
+      console.error('Error fetching payments:', paymentError);
+      allPayments = []; // Set empty array if payments fail
+    }
     
     // Create CSV headers
     const headers = [
@@ -287,71 +293,114 @@ router.get('/export-students', auth, adminOnly, async (req, res) => {
     const csvRows = [headers.join(',')];
     
     for (const student of students) {
-      // Get payments for this student
-      const studentPayments = allPayments.filter(p => p.userId._id.toString() === student._id.toString());
+      try {
+        // Get payments for this student
+        const studentPayments = allPayments.filter(p => p.userId && p.userId._id && p.userId._id.toString() === student._id.toString());
+        
+        // Sort payments by date
+        studentPayments.sort((a, b) => new Date(a.paymentDate) - new Date(b.paymentDate));
+        
+        // Calculate payment details
+        const totalPaid = studentPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        const remainingAmount = ((student.fees || 0) + (student.deposit || 0)) - totalPaid;
+        const paymentStatus = remainingAmount <= 0 ? 'Fully Paid' : remainingAmount < ((student.fees || 0) + (student.deposit || 0)) ? 'Partially Paid' : 'Not Paid';
+        
+        // Get payment details (up to 3 payments)
+        const payment1 = studentPayments[0] || null;
+        const payment2 = studentPayments[1] || null;
+        const payment3 = studentPayments[2] || null;
+        
+        // Get all Razorpay payment IDs
+        const razorpayIds = studentPayments
+          .filter(p => p.razorpayPaymentId)
+          .map(p => p.razorpayPaymentId)
+          .join('; ');
+        
+        const lastPaymentDate = studentPayments.length > 0 
+          ? new Date(studentPayments[studentPayments.length - 1].paymentDate).toLocaleDateString()
+          : '';
       
-      // Sort payments by date
-      studentPayments.sort((a, b) => new Date(a.paymentDate) - new Date(b.paymentDate));
-      
-      // Calculate payment details
-      const totalPaid = studentPayments.reduce((sum, p) => sum + p.amount, 0);
-      const remainingAmount = (student.fees + student.deposit) - totalPaid;
-      const paymentStatus = remainingAmount <= 0 ? 'Fully Paid' : remainingAmount < (student.fees + student.deposit) ? 'Partially Paid' : 'Not Paid';
-      
-      // Get payment details (up to 3 payments)
-      const payment1 = studentPayments[0] || null;
-      const payment2 = studentPayments[1] || null;
-      const payment3 = studentPayments[2] || null;
-      
-      // Get all Razorpay payment IDs
-      const razorpayIds = studentPayments
-        .filter(p => p.razorpayPaymentId)
-        .map(p => p.razorpayPaymentId)
-        .join('; ');
-      
-      const lastPaymentDate = studentPayments.length > 0 
-        ? new Date(studentPayments[studentPayments.length - 1].paymentDate).toLocaleDateString()
-        : '';
-      
-      const row = [
-        `"${student.studentId}"`,
-        `"${student.name}"`,
-        `"${student.email}"`,
-        `"${student.contactNo}"`,
-        `"${student.college}"`,
-        `"${student.year}"`,
-        `"${student.department}"`,
-        `"${student.admissionYear}"`,
-        `"${student.studentType}"`,
-        `"${student.category}"`,
-        `"${student.hostelType}"`,
-        `"${student.hostelName}"`,
-        `"${student.roomType}"`,
-        `"${student.hostelYear}"`,
-        student.fees,
-        student.deposit,
-        student.splitFee ? 'Yes' : 'No',
-        `"${new Date(student.createdAt).toLocaleDateString()}"`,
-        payment1 ? `"${new Date(payment1.paymentDate).toLocaleDateString()}"` : '',
-        payment1 ? payment1.amount : '',
-        payment1 && payment1.receiptUrl ? `"${payment1.receiptUrl}"` : '',
-        payment1 ? payment1.installment : '',
-        payment2 ? `"${new Date(payment2.paymentDate).toLocaleDateString()}"` : '',
-        payment2 ? payment2.amount : '',
-        payment2 && payment2.receiptUrl ? `"${payment2.receiptUrl}"` : '',
-        payment2 ? payment2.installment : '',
-        payment3 ? `"${new Date(payment3.paymentDate).toLocaleDateString()}"` : '',
-        payment3 ? payment3.amount : '',
-        payment3 && payment3.receiptUrl ? `"${payment3.receiptUrl}"` : '',
-        payment3 ? payment3.installment : '',
-        totalPaid,
-        remainingAmount,
-        `"${paymentStatus}"`,
-        `"${lastPaymentDate}"`,
-        `"${razorpayIds}"`
-      ];
-      
-      csvRows.push(row.join(','));
+              const row = [
+          `"${student.studentId || ''}"`,
+          `"${student.name || ''}"`,
+          `"${student.email || ''}"`,
+          `"${student.contactNo || ''}"`,
+          `"${student.college || ''}"`,
+          `"${student.year || ''}"`,
+          `"${student.department || ''}"`,
+          `"${student.admissionYear || ''}"`,
+          `"${student.studentType || ''}"`,
+          `"${student.category || ''}"`,
+          `"${student.hostelType || ''}"`,
+          `"${student.hostelName || ''}"`,
+          `"${student.roomType || ''}"`,
+          `"${student.hostelYear || ''}"`,
+          student.fees || 0,
+          student.deposit || 0,
+          student.splitFee ? 'Yes' : 'No',
+          `"${new Date(student.createdAt).toLocaleDateString()}"`,
+          payment1 ? `"${new Date(payment1.paymentDate).toLocaleDateString()}"` : '',
+          payment1 ? (payment1.amount || 0) : '',
+          payment1 && payment1.receiptUrl ? `"${payment1.receiptUrl}"` : '',
+          payment1 ? (payment1.installment || 1) : '',
+          payment2 ? `"${new Date(payment2.paymentDate).toLocaleDateString()}"` : '',
+          payment2 ? (payment2.amount || 0) : '',
+          payment2 && payment2.receiptUrl ? `"${payment2.receiptUrl}"` : '',
+          payment2 ? (payment2.installment || 2) : '',
+          payment3 ? `"${new Date(payment3.paymentDate).toLocaleDateString()}"` : '',
+          payment3 ? (payment3.amount || 0) : '',
+          payment3 && payment3.receiptUrl ? `"${payment3.receiptUrl}"` : '',
+          payment3 ? (payment3.installment || 3) : '',
+          totalPaid,
+          remainingAmount,
+          `"${paymentStatus}"`,
+          `"${lastPaymentDate}"`,
+          `"${razorpayIds}"`
+        ];
+        
+        csvRows.push(row.join(','));
+      } catch (studentError) {
+        console.error(`Error processing student ${student.studentId}:`, studentError);
+        // Add a basic row for this student with error info
+        const errorRow = [
+          `"${student.studentId || 'ERROR'}"`,
+          `"${student.name || 'ERROR'}"`,
+          `"${student.email || 'ERROR'}"`,
+          `"ERROR"`,
+          `"ERROR"`,
+          `"ERROR"`,
+          `"ERROR"`,
+          `"ERROR"`,
+          `"ERROR"`,
+          `"ERROR"`,
+          `"ERROR"`,
+          `"ERROR"`,
+          `"ERROR"`,
+          `"ERROR"`,
+          0,
+          0,
+          'No',
+          `"${new Date().toLocaleDateString()}"`,
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          0,
+          0,
+          '"Error Processing"',
+          '"Error"',
+          '"Error"'
+        ];
+        csvRows.push(errorRow.join(','));
+      }
     }
     
     const csvContent = csvRows.join('\n');
@@ -371,10 +420,19 @@ router.get('/export-students', auth, adminOnly, async (req, res) => {
 // Export detailed payment history to CSV
 router.get('/export-payment-history', auth, adminOnly, async (req, res) => {
   try {
+    console.log('Export payment history request received');
+    
     // Get all payments with user details
-    const payments = await Payment.find({ status: 'success' })
-      .populate('userId')
-      .sort({ paymentDate: -1 });
+    let payments = [];
+    try {
+      payments = await Payment.find({ status: 'success' })
+        .populate('userId')
+        .sort({ paymentDate: -1 });
+      console.log(`Found ${payments.length} payments`);
+    } catch (paymentError) {
+      console.error('Error fetching payments:', paymentError);
+      payments = [];
+    }
     
     // Create CSV headers for payment history
     const headers = [
@@ -401,30 +459,38 @@ router.get('/export-payment-history', auth, adminOnly, async (req, res) => {
     const csvRows = [headers.join(',')];
     
     for (const payment of payments) {
-      const student = payment.userId;
-      if (!student) continue; // Skip if student not found
-      
-      const row = [
-        `"${payment._id}"`,
-        `"${student.studentId}"`,
-        `"${student.name}"`,
-        `"${student.email}"`,
-        `"${student.college}"`,
-        `"${new Date(payment.paymentDate).toLocaleDateString()}"`,
-        payment.amount,
-        payment.installment || 1,
-        `"${payment.razorpayPaymentId ? 'Razorpay' : 'Manual'}"`,
-        `"${payment.razorpayPaymentId || ''}"`,
-        `"${payment.hostelYear || ''}"`,
-        `"${payment.roomType || ''}"`,
-        `"${payment.category || ''}"`,
-        `"${payment.hostelName || ''}"`,
-        `"${payment.studentType || ''}"`,
-        `"${payment.status}"`,
-        `"${new Date(payment.createdAt).toLocaleDateString()}"`
-      ];
-      
-      csvRows.push(row.join(','));
+      try {
+        const student = payment.userId;
+        if (!student) {
+          console.log('Skipping payment with no student:', payment._id);
+          continue; // Skip if student not found
+        }
+        
+        const row = [
+          `"${payment._id}"`,
+          `"${student.studentId || ''}"`,
+          `"${student.name || ''}"`,
+          `"${student.email || ''}"`,
+          `"${student.college || ''}"`,
+          `"${new Date(payment.paymentDate).toLocaleDateString()}"`,
+          payment.amount || 0,
+          payment.installment || 1,
+          `"${payment.razorpayPaymentId ? 'Razorpay' : 'Manual'}"`,
+          `"${payment.razorpayPaymentId || ''}"`,
+          `"${payment.hostelYear || ''}"`,
+          `"${payment.roomType || ''}"`,
+          `"${payment.category || ''}"`,
+          `"${payment.hostelName || ''}"`,
+          `"${payment.studentType || ''}"`,
+          `"${payment.status || ''}"`,
+          `"${new Date(payment.createdAt).toLocaleDateString()}"`
+        ];
+        
+        csvRows.push(row.join(','));
+      } catch (paymentError) {
+        console.error(`Error processing payment ${payment._id}:`, paymentError);
+        // Skip this payment and continue with others
+      }
     }
     
     const csvContent = csvRows.join('\n');

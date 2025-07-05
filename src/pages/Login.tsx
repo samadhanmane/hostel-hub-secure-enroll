@@ -138,9 +138,7 @@ const Login = () => {
                     onChange={(e) => setAdminPassword(e.target.value)}
                     required
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Use admin credentials from backend .env file
-                  </p>
+
                 </div>
                 <Button 
                   type="submit" 
