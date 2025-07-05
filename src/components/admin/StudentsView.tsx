@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Student } from "@/types";
-import { Search, Download, Eye, Trash2 } from "lucide-react";
+import { Search, Download, Eye, Trash2, FileSpreadsheet, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import axios from "axios";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
@@ -19,6 +20,7 @@ const StudentsView = () => {
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   const [payments, setPayments] = useState<any[]>([]);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     // Load students from backend
@@ -57,6 +59,36 @@ const StudentsView = () => {
     }
   };
 
+  const handleExportCSV = async (type: 'students' | 'payments') => {
+    setIsExporting(true);
+    try {
+      const endpoint = type === 'students' ? '/export-students' : '/export-payment-history';
+      const filename = type === 'students' ? 'students_data' : 'payment_history';
+      
+      const response = await axios.get(`${BACKEND_URL}/api/admin${endpoint}`, {
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export CSV file. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const getStudentTypeColor = (type: string) => {
     return type === 'new' ? 'bg-hostel-success text-white' : 'bg-hostel-primary-light text-hostel-primary';
   };
@@ -71,10 +103,30 @@ const StudentsView = () => {
         <CardTitle className="flex items-center justify-between">
           <span>Enrolled Students</span>
           <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm">
-              <Download className="w-4 h-4 mr-2" />
-              Export
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  disabled={isExporting}
+                  className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                >
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  {isExporting ? 'Exporting...' : 'Export Data'}
+                  <ChevronDown className="w-4 h-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExportCSV('students')}>
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Export Students Data
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExportCSV('payments')}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Payment History
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </CardTitle>
         <CardDescription>

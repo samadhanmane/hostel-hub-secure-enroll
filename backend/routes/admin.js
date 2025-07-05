@@ -231,6 +231,212 @@ router.delete('/users/:studentId', auth, adminOnly, async (req, res) => {
   res.json({ message: 'Student deleted' });
 });
 
+// Export students data to CSV
+router.get('/export-students', auth, adminOnly, async (req, res) => {
+  try {
+    // Get all students with their payments
+    const students = await User.find().sort({ createdAt: -1 });
+    
+    // Get all payments
+    const allPayments = await Payment.find({ status: 'success' }).populate('userId');
+    
+    // Create CSV headers
+    const headers = [
+      'Student ID',
+      'Name',
+      'Email',
+      'Contact Number',
+      'College',
+      'Academic Year',
+      'Department',
+      'Admission Year',
+      'Student Type',
+      'Category',
+      'Hostel Type',
+      'Hostel Name',
+      'Room Type',
+      'Hostel Year',
+      'Total Fees',
+      'Deposit Amount',
+      'Split Fee Eligible',
+      'Registration Date',
+      'Payment 1 Date',
+      'Payment 1 Amount',
+      'Payment 1 Receipt URL',
+      'Payment 1 Installment',
+      'Payment 2 Date',
+      'Payment 2 Amount',
+      'Payment 2 Receipt URL',
+      'Payment 2 Installment',
+      'Payment 3 Date',
+      'Payment 3 Amount',
+      'Payment 3 Receipt URL',
+      'Payment 3 Installment',
+      'Total Paid Amount',
+      'Remaining Amount',
+      'Payment Status',
+      'Last Payment Date',
+      'Razorpay Payment IDs'
+    ];
+
+    // Create CSV rows
+    const csvRows = [headers.join(',')];
+    
+    for (const student of students) {
+      // Get payments for this student
+      const studentPayments = allPayments.filter(p => p.userId._id.toString() === student._id.toString());
+      
+      // Sort payments by date
+      studentPayments.sort((a, b) => new Date(a.paymentDate) - new Date(b.paymentDate));
+      
+      // Calculate payment details
+      const totalPaid = studentPayments.reduce((sum, p) => sum + p.amount, 0);
+      const remainingAmount = (student.fees + student.deposit) - totalPaid;
+      const paymentStatus = remainingAmount <= 0 ? 'Fully Paid' : remainingAmount < (student.fees + student.deposit) ? 'Partially Paid' : 'Not Paid';
+      
+      // Get payment details (up to 3 payments)
+      const payment1 = studentPayments[0] || null;
+      const payment2 = studentPayments[1] || null;
+      const payment3 = studentPayments[2] || null;
+      
+      // Get all Razorpay payment IDs
+      const razorpayIds = studentPayments
+        .filter(p => p.razorpayPaymentId)
+        .map(p => p.razorpayPaymentId)
+        .join('; ');
+      
+      const lastPaymentDate = studentPayments.length > 0 
+        ? new Date(studentPayments[studentPayments.length - 1].paymentDate).toLocaleDateString()
+        : '';
+      
+      const row = [
+        `"${student.studentId}"`,
+        `"${student.name}"`,
+        `"${student.email}"`,
+        `"${student.contactNo}"`,
+        `"${student.college}"`,
+        `"${student.year}"`,
+        `"${student.department}"`,
+        `"${student.admissionYear}"`,
+        `"${student.studentType}"`,
+        `"${student.category}"`,
+        `"${student.hostelType}"`,
+        `"${student.hostelName}"`,
+        `"${student.roomType}"`,
+        `"${student.hostelYear}"`,
+        student.fees,
+        student.deposit,
+        student.splitFee ? 'Yes' : 'No',
+        `"${new Date(student.createdAt).toLocaleDateString()}"`,
+        payment1 ? `"${new Date(payment1.paymentDate).toLocaleDateString()}"` : '',
+        payment1 ? payment1.amount : '',
+        payment1 && payment1.receiptUrl ? `"${payment1.receiptUrl}"` : '',
+        payment1 ? payment1.installment : '',
+        payment2 ? `"${new Date(payment2.paymentDate).toLocaleDateString()}"` : '',
+        payment2 ? payment2.amount : '',
+        payment2 && payment2.receiptUrl ? `"${payment2.receiptUrl}"` : '',
+        payment2 ? payment2.installment : '',
+        payment3 ? `"${new Date(payment3.paymentDate).toLocaleDateString()}"` : '',
+        payment3 ? payment3.amount : '',
+        payment3 && payment3.receiptUrl ? `"${payment3.receiptUrl}"` : '',
+        payment3 ? payment3.installment : '',
+        totalPaid,
+        remainingAmount,
+        `"${paymentStatus}"`,
+        `"${lastPaymentDate}"`,
+        `"${razorpayIds}"`
+      ];
+      
+      csvRows.push(row.join(','));
+    }
+    
+    const csvContent = csvRows.join('\n');
+    
+    // Set response headers for CSV download
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="students_data_${new Date().toISOString().split('T')[0]}.csv"`);
+    
+    res.send(csvContent);
+    
+  } catch (error) {
+    console.error('Error exporting students data:', error);
+    res.status(500).json({ message: 'Failed to export students data', error: error.message });
+  }
+});
+
+// Export detailed payment history to CSV
+router.get('/export-payment-history', auth, adminOnly, async (req, res) => {
+  try {
+    // Get all payments with user details
+    const payments = await Payment.find({ status: 'success' })
+      .populate('userId')
+      .sort({ paymentDate: -1 });
+    
+    // Create CSV headers for payment history
+    const headers = [
+      'Payment ID',
+      'Student ID',
+      'Student Name',
+      'Student Email',
+      'Payment Date',
+      'Payment Amount',
+      'Installment Number',
+      'Payment Method',
+      'Razorpay Payment ID',
+      'Receipt URL',
+      'Hostel Year',
+      'Room Type',
+      'Category',
+      'Hostel Name',
+      'Student Type',
+      'Payment Status',
+      'Created At'
+    ];
+
+    // Create CSV rows
+    const csvRows = [headers.join(',')];
+    
+    for (const payment of payments) {
+      const student = payment.userId;
+      if (!student) continue; // Skip if student not found
+      
+      const row = [
+        `"${payment._id}"`,
+        `"${student.studentId}"`,
+        `"${student.name}"`,
+        `"${student.email}"`,
+        `"${new Date(payment.paymentDate).toLocaleDateString()}"`,
+        payment.amount,
+        payment.installment || 1,
+        `"${payment.razorpayPaymentId ? 'Razorpay' : 'Manual'}"`,
+        `"${payment.razorpayPaymentId || ''}"`,
+        `"${payment.receiptUrl || ''}"`,
+        `"${payment.hostelYear || ''}"`,
+        `"${payment.roomType || ''}"`,
+        `"${payment.category || ''}"`,
+        `"${payment.hostelName || ''}"`,
+        `"${payment.studentType || ''}"`,
+        `"${payment.status}"`,
+        `"${new Date(payment.createdAt).toLocaleDateString()}"`
+      ];
+      
+      csvRows.push(row.join(','));
+    }
+    
+    const csvContent = csvRows.join('\n');
+    
+    // Set response headers for CSV download
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="payment_history_${new Date().toISOString().split('T')[0]}.csv"`);
+    
+    res.send(csvContent);
+    
+  } catch (error) {
+    console.error('Error exporting payment history:', error);
+    res.status(500).json({ message: 'Failed to export payment history', error: error.message });
+  }
+});
+
 // TODO: Add edit/delete endpoints for each entity
 
 module.exports = router; 
