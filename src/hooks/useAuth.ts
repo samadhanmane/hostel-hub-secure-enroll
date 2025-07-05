@@ -23,8 +23,42 @@ export const useAuthState = (): AuthContextType => {
   const login = async (email: string, password: string, role: 'student' | 'admin') => {
     setIsLoading(true);
     try {
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+      
+      if (role === 'admin') {
+        // Real admin authentication
+        const response = await fetch(`${BACKEND_URL}/api/auth/admin/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password }),
+        });
+        
+        if (!response.ok) {
+          setIsLoading(false);
+          return false;
+        }
+        
+        const data = await response.json();
+        const adminUser = {
+          id: 'admin',
+          email,
+          role: 'admin',
+          name: 'Admin'
+        };
+        
+        setUser(adminUser);
+        localStorage.setItem('hostel_user', JSON.stringify(adminUser));
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('role', 'admin');
+        setIsLoading(false);
+        return true;
+      }
+      
       if (role === 'student') {
-        // Allow any email to proceed
+        // For student login, we'll use a simplified approach for now
+        // In production, you'd want proper student authentication
         const studentUser = {
           id: '', // No studentId yet
           email,
@@ -33,34 +67,17 @@ export const useAuthState = (): AuthContextType => {
         };
         setUser(studentUser);
         localStorage.setItem('hostel_user', JSON.stringify(studentUser));
-        localStorage.setItem('token', 'demo-student-token');
+        // Generate a temporary token for student (in production, use proper auth)
+        localStorage.setItem('token', 'temp-student-token');
         localStorage.setItem('role', 'user');
         setIsLoading(false);
         return true;
       }
-      if (role === 'admin') {
-        // Demo admin credentials
-        if (email === 'admin@hostelhub.com' && password === 'admin123') {
-          const adminUser = {
-            id: 'admin',
-            email,
-            role: 'admin',
-            name: 'Admin'
-          };
-          setUser(adminUser);
-          localStorage.setItem('hostel_user', JSON.stringify(adminUser));
-          localStorage.setItem('token', 'demo-admin-token');
-          localStorage.setItem('role', 'admin');
-          setIsLoading(false);
-          return true;
-        } else {
-          setIsLoading(false);
-          return false;
-        }
-      }
+      
       setIsLoading(false);
       return false;
     } catch (error) {
+      console.error('Login error:', error);
       setIsLoading(false);
       return false;
     }

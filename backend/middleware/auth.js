@@ -1,22 +1,22 @@
-// Simple authentication middleware for development/testing
+const jwt = require('jsonwebtoken');
+
+// Proper JWT authentication middleware
 module.exports = function (req, res, next) {
   const authHeader = req.headers.authorization;
   
-  // Check for demo tokens
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7);
-    
-    // Handle demo tokens
-    if (token === 'demo-admin-token') {
-      req.user = { role: 'admin', email: 'admin@hostelhub.com' };
-      return next();
-    } else if (token === 'demo-student-token') {
-      req.user = { role: 'user', email: 'student@example.com' };
-      return next();
-    }
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Access denied. No token provided.' });
   }
   
-  // For now, allow admin access for testing (fallback)
-  req.user = { role: 'admin', email: 'admin@hostelhub.com' };
-  next();
+  const token = authHeader.substring(7);
+  
+  try {
+    // Verify JWT token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    console.error('Token verification failed:', error.message);
+    return res.status(401).json({ message: 'Invalid token.' });
+  }
 }; 

@@ -139,7 +139,7 @@ const Login = () => {
                     required
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Demo: admin123
+                    Use admin credentials from backend .env file
                   </p>
                 </div>
                 <Button 
