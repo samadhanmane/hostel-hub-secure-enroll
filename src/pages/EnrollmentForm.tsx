@@ -334,12 +334,7 @@ const EnrollmentForm = () => {
             </div>
           )}
           
-          {/* Debug Information */}
-          {!isLoading && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
-              <div>Data loaded: Colleges: {colleges.length}, Years: {years.length}, Departments: {departments.length}, Categories: {categories.length}, Room Types: {roomTypes.length}, Hostels: {hostels.length}</div>
-            </div>
-          )}
+
           
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Personal Information */}
