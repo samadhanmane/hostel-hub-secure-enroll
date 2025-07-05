@@ -189,10 +189,21 @@ router.post('/settings', auth, adminOnly, async (req, res) => {
   }
 });
 
-// Get all Fees
+// Get all Fees (Admin only)
 router.get('/fees', auth, adminOnly, async (req, res) => {
   const fees = await Fee.find();
   res.json(fees);
+});
+
+// Get public fees (for students)
+router.get('/public-fees', async (req, res) => {
+  try {
+    const fees = await Fee.find();
+    res.json(fees);
+  } catch (error) {
+    console.error('Error fetching public fees:', error);
+    res.status(500).json({ message: 'Failed to fetch fees' });
+  }
 });
 
 // Get all users (students) with college and hostel names

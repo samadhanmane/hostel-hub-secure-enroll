@@ -138,17 +138,20 @@ const EnrollmentForm = () => {
         const [
           collegesRes,
           hostelsRes,
-          settingsRes
+          settingsRes,
+          feesRes
         ] = await Promise.all([
           axios.get(`${BACKEND_URL}/api/dropdowns/colleges`),
           axios.get(`${BACKEND_URL}/api/dropdowns/hostels`),
-          axios.get(`${BACKEND_URL}/api/admin/public-settings`)
+          axios.get(`${BACKEND_URL}/api/admin/public-settings`),
+          axios.get(`${BACKEND_URL}/api/admin/public-fees`)
         ]);
 
         console.log('Dropdown data received:', {
           colleges: collegesRes.data.length,
           hostels: hostelsRes.data.length,
-          settings: settingsRes.data
+          settings: settingsRes.data,
+          fees: feesRes.data.length
         });
 
         // Set data from individual models (Colleges and Hostels)
@@ -169,8 +172,9 @@ const EnrollmentForm = () => {
         console.log('Hostel years data:', hostelYearsData);
         setHostelYears(hostelYearsData);
         
-        // Set default fees since we can't access admin endpoints
-        setFees([]);
+        // Set fees from public endpoint
+        setFees(feesRes.data);
+        console.log('Fees data:', feesRes.data);
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching dropdown data:', error);
