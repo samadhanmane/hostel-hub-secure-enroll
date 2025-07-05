@@ -26,9 +26,7 @@ const AdminDashboard = () => {
       setLoading(true);
       setError("");
       try {
-        const res = await fetch(`${BACKEND_URL}/api/admin/dashboard-stats`, {
-          credentials: "include"
-        });
+        const res = await fetch(`${BACKEND_URL}/api/admin/dashboard-stats`);
         if (!res.ok) throw new Error("Failed to fetch stats");
         const data = await res.json();
         setStats(data);
