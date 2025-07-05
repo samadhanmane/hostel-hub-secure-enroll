@@ -32,6 +32,7 @@ const EnrollmentForm = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [years, setYears] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
+  const [hostelYears, setHostelYears] = useState<any[]>([]);
   const [fees, setFees] = useState<any[]>([]);
   const [settings, setSettings] = useState({
     academicYears: [],
@@ -163,6 +164,11 @@ const EnrollmentForm = () => {
         setCategories(settingsRes.data.castes?.map(name => ({ _id: name, name })) || []);
         setRoomTypes(settingsRes.data.roomTypes?.map(name => ({ _id: name, name })) || []);
         
+        // Set hostel years from settings
+        const hostelYearsData = settingsRes.data.hostelYears?.map(name => ({ _id: name, name })) || [];
+        console.log('Hostel years data:', hostelYearsData);
+        setHostelYears(hostelYearsData);
+        
         // Set default fees since we can't access admin endpoints
         setFees([]);
         setIsLoading(false);
@@ -190,6 +196,7 @@ const EnrollmentForm = () => {
         setDepartments([]);
         setCategories([]);
         setRoomTypes([]);
+        setHostelYears([]);
         setFees([]);
         setIsLoading(false);
       }
@@ -531,7 +538,7 @@ const EnrollmentForm = () => {
                       <SelectValue placeholder="Select hostel year" />
                     </SelectTrigger>
                     <SelectContent>
-                      {years.map(year => (
+                      {hostelYears.map(year => (
                         <SelectItem key={year._id} value={year.name}>{year.name}</SelectItem>
                       ))}
                     </SelectContent>
