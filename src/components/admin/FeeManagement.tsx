@@ -9,7 +9,7 @@ import { Plus, Edit, Trash2, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/utils/feeCalculator";
 import { Separator } from "@/components/ui/separator";
-import axios from "axios";
+import api from "@/utils/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 interface FeeStructure {
@@ -29,8 +29,6 @@ interface SplitFeePermission {
   studentId?: string;
   createdAt?: string;
 }
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const FeeManagement = () => {
   const [fees, setFees] = useState<any[]>([]);
@@ -63,13 +61,13 @@ const FeeManagement = () => {
   });
 
   useEffect(() => {
-    axios.get(`${BACKEND_URL}/api/dropdowns/hostels`).then(res => setHostels(res.data));
-    axios.get(`${BACKEND_URL}/api/admin/settings`).then(res => setSettings(res.data));
+    api.get('/api/dropdowns/hostels').then(res => setHostels(res.data));
+    api.get('/api/admin/settings').then(res => setSettings(res.data));
   }, []);
 
   const fetchFees = async () => {
     try {
-      const res = await axios.get(`${BACKEND_URL}/api/admin/fees`);
+      const res = await api.get('/api/admin/fees');
       setFees(res.data);
     } catch (err) {
       toast({ title: "Error", description: "Failed to fetch fees.", variant: "destructive" });
@@ -93,7 +91,7 @@ const FeeManagement = () => {
     };
 
     try {
-      await axios.post(`${BACKEND_URL}/api/admin/fee`, fee);
+      await api.post('/api/admin/fee', fee);
       toast({ title: "Fee Added", description: `Fee has been added successfully.` });
       setNewFee({
         hostelId: '',
@@ -113,7 +111,7 @@ const FeeManagement = () => {
 
   const fetchSplitPermissions = async () => {
     try {
-      const res = await axios.get(`${BACKEND_URL}/api/admin/split-fee`);
+      const res = await api.get('/api/admin/split-fee');
       setSplitPermissions(res.data);
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to fetch split fee permissions.', variant: 'destructive' });
@@ -126,7 +124,7 @@ const FeeManagement = () => {
     e.preventDefault();
     if (!newSplitPermission.email && !newSplitPermission.studentId) return;
     try {
-      await axios.post(`${BACKEND_URL}/api/admin/split-fee`, newSplitPermission);
+      await api.post('/api/admin/split-fee', newSplitPermission);
       toast({ title: 'Split Fee Permission Granted', description: 'Student can now pay in installments.' });
       setNewSplitPermission({ email: '', studentId: '' });
       setIsAddingSplit(false);
@@ -139,7 +137,7 @@ const FeeManagement = () => {
   const handleRevokeSplitPermission = async (perm: SplitFeePermission) => {
     if (!window.confirm('Revoke split fee permission for this student?')) return;
     try {
-      await axios.delete(`${BACKEND_URL}/api/admin/split-fee`, { data: { email: perm.email, studentId: perm.studentId } });
+      await api.delete('/api/admin/split-fee', { data: { email: perm.email, studentId: perm.studentId } });
       toast({ title: 'Permission Revoked', description: 'Split fee permission revoked.' });
       fetchSplitPermissions();
     } catch (err: any) {
@@ -157,7 +155,7 @@ const FeeManagement = () => {
   const handleDeleteFee = async (id: string) => {
     if (!window.confirm("Delete this fee?")) return;
     try {
-      await axios.delete(`${BACKEND_URL}/api/admin/fee/${id}`);
+      await api.delete(`/api/admin/fee/${id}`);
       toast({ title: "Fee Removed", description: "Fee has been removed successfully." });
       fetchFees();
     } catch (err: any) {
@@ -168,8 +166,8 @@ const FeeManagement = () => {
   const openEditModal = async (fee: any) => {
     // Fetch latest settings and hostels for up-to-date dropdowns
     const [hostelsRes, settingsRes] = await Promise.all([
-      axios.get(`${BACKEND_URL}/api/dropdowns/hostels`),
-      axios.get(`${BACKEND_URL}/api/admin/settings`)
+      api.get('/api/dropdowns/hostels'),
+      api.get('/api/admin/settings')
     ]);
     setHostels(hostelsRes.data);
     setSettings(settingsRes.data);
@@ -198,7 +196,7 @@ const FeeManagement = () => {
       return;
     }
     try {
-      await axios.put(`${BACKEND_URL}/api/admin/fee/${editFee._id || editFee.id}`, editFeeData);
+      await api.put(`/api/admin/fee/${editFee._id || editFee.id}`, editFeeData);
       toast({ title: "Fee Updated", description: "Fee structure updated successfully." });
       closeEditModal();
       fetchFees();

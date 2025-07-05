@@ -7,9 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, X, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import axios from "axios";
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+import api from "@/utils/api";
 
 const AdminSettings = () => {
   const [settings, setSettings] = useState({
@@ -25,13 +23,17 @@ const AdminSettings = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    axios.get(`${BACKEND_URL}/api/admin/settings`).then(res => setSettings(res.data)).catch(() => {});
+    api.get('/api/admin/settings')
+      .then(res => setSettings(res.data))
+      .catch(error => {
+        console.error('Failed to fetch settings:', error);
+      });
   }, []);
 
   const saveSettings = async (updatedSettings: typeof settings, onSuccess?: () => void) => {
     setIsSaving(true);
     try {
-      await axios.post(`${BACKEND_URL}/api/admin/settings`, updatedSettings);
+      await api.post('/api/admin/settings', updatedSettings);
       setSettings(updatedSettings);
       toast({ title: "Settings Saved", description: "Settings have been updated successfully." });
       if (onSuccess) onSuccess();
