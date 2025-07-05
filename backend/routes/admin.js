@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const auth = require('../middleware/auth');
 const College = require('../models/College');
 const Year = require('../models/Year');
@@ -235,10 +236,23 @@ router.delete('/users/:studentId', auth, adminOnly, async (req, res) => {
 router.get('/export-students', auth, adminOnly, async (req, res) => {
   try {
     console.log('Export students request received');
+    console.log('User from auth:', req.user);
+    
+    // Check if we can connect to database
+    if (!mongoose.connection.readyState) {
+      console.error('Database not connected');
+      return res.status(500).json({ message: 'Database connection error' });
+    }
     
     // Get all students with their payments
-    const students = await User.find().sort({ createdAt: -1 });
-    console.log(`Found ${students.length} students`);
+    let students = [];
+    try {
+      students = await User.find().sort({ createdAt: -1 });
+      console.log(`Found ${students.length} students`);
+    } catch (studentError) {
+      console.error('Error fetching students:', studentError);
+      return res.status(500).json({ message: 'Error fetching students data', error: studentError.message });
+    }
     
     // Get all payments - handle case where there might be no payments
     let allPayments = [];
@@ -403,17 +417,24 @@ router.get('/export-students', auth, adminOnly, async (req, res) => {
       }
     }
     
+    console.log('CSV generation completed, rows:', csvRows.length);
     const csvContent = csvRows.join('\n');
     
     // Set response headers for CSV download
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="students_data_${new Date().toISOString().split('T')[0]}.csv"`);
     
+    console.log('Sending CSV response, content length:', csvContent.length);
     res.send(csvContent);
     
   } catch (error) {
     console.error('Error exporting students data:', error);
-    res.status(500).json({ message: 'Failed to export students data', error: error.message });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      message: 'Failed to export students data', 
+      error: error.message,
+      stack: error.stack 
+    });
   }
 });
 
@@ -504,6 +525,20 @@ router.get('/export-payment-history', auth, adminOnly, async (req, res) => {
   } catch (error) {
     console.error('Error exporting payment history:', error);
     res.status(500).json({ message: 'Failed to export payment history', error: error.message });
+  }
+});
+
+// Test endpoint to check admin access
+router.get('/test', auth, adminOnly, async (req, res) => {
+  try {
+    res.json({ 
+      message: 'Admin access working', 
+      user: req.user,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Test endpoint error:', error);
+    res.status(500).json({ message: 'Test failed', error: error.message });
   }
 });
 

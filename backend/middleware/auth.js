@@ -10,6 +10,12 @@ module.exports = function (req, res, next) {
   
   const token = authHeader.substring(7);
   
+  // Check if JWT_SECRET is configured
+  if (!process.env.JWT_SECRET) {
+    console.error('JWT_SECRET not configured');
+    return res.status(500).json({ message: 'Server configuration error.' });
+  }
+  
   try {
     // Verify JWT token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -17,6 +23,8 @@ module.exports = function (req, res, next) {
     next();
   } catch (error) {
     console.error('Token verification failed:', error.message);
+    console.error('Token:', token.substring(0, 20) + '...');
+    console.error('JWT_SECRET exists:', !!process.env.JWT_SECRET);
     return res.status(401).json({ message: 'Invalid token.' });
   }
 }; 

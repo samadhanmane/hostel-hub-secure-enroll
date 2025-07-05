@@ -100,12 +100,26 @@ const StudentsView = () => {
       console.error('Error response:', error.response?.data);
       
       let errorMessage = 'Failed to export CSV file';
-      if (error.response?.status === 500) {
+      
+      // Try to get the actual error message from the server
+      if (error.response?.data) {
+        try {
+          // If it's a blob, try to read it as text
+          if (error.response.data instanceof Blob) {
+            const text = await error.response.data.text();
+            const jsonData = JSON.parse(text);
+            errorMessage = jsonData.message || jsonData.error || 'Server error';
+          } else {
+            errorMessage = error.response.data.message || error.response.data.error || 'Server error';
+          }
+        } catch (parseError) {
+          console.error('Error parsing error response:', parseError);
+          errorMessage = 'Server error occurred while generating CSV. Please try again.';
+        }
+      } else if (error.response?.status === 500) {
         errorMessage = 'Server error occurred while generating CSV. Please try again.';
       } else if (error.response?.status === 401) {
         errorMessage = 'Authentication failed. Please login again.';
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
       } else if (error.message) {
         errorMessage = error.message;
       }
