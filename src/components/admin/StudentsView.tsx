@@ -9,7 +9,7 @@ import { Search, Download, Eye, Trash2, FileSpreadsheet, ChevronDown } from "luc
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import axios from "axios";
+import api from "@/utils/api";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -24,10 +24,14 @@ const StudentsView = () => {
 
   useEffect(() => {
     // Load students from backend
-    axios.get(`${BACKEND_URL}/api/admin/users`).then(res => {
-      setStudents(res.data);
-      setFilteredStudents(res.data);
-    });
+    api.get('/api/admin/users')
+      .then(res => {
+        setStudents(res.data);
+        setFilteredStudents(res.data);
+      })
+      .catch(error => {
+        console.error('Failed to fetch students:', error);
+      });
   }, []);
 
   useEffect(() => {
@@ -44,17 +48,23 @@ const StudentsView = () => {
     setSelectedStudent(student);
     setIsViewModalOpen(true);
     // Fetch payments for this student
-    const res = await axios.get(`${BACKEND_URL}/api/admin/payments?studentId=${student.studentId}`);
-    setPayments(res.data);
+    try {
+      const res = await api.get(`/api/admin/payments?studentId=${student.studentId}`);
+      setPayments(res.data);
+    } catch (error) {
+      console.error('Failed to fetch payments:', error);
+    }
   };
 
   const handleDelete = async (student: any) => {
     if (!window.confirm(`Delete student ${student.name} (${student.studentId})?`)) return;
+
     try {
-      await axios.delete(`${BACKEND_URL}/api/admin/users/${student.studentId}`);
+      await api.delete(`/api/admin/users/${student.studentId}`);
       setStudents((prev) => prev.filter((s) => s.studentId !== student.studentId));
       setFilteredStudents((prev) => prev.filter((s) => s.studentId !== student.studentId));
     } catch (err) {
+      console.error('Failed to delete student:', err);
       alert("Failed to delete student.");
     }
   };
@@ -68,11 +78,8 @@ const StudentsView = () => {
       console.log('Exporting:', type, 'to endpoint:', `${BACKEND_URL}/api/admin${endpoint}`);
       console.log('Token:', localStorage.getItem('token'));
       
-      const response = await axios.get(`${BACKEND_URL}/api/admin${endpoint}`, {
-        responseType: 'blob',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+      const response = await api.get(`/api/admin${endpoint}`, {
+        responseType: 'blob'
       });
       
       console.log('Export response received:', response.status);

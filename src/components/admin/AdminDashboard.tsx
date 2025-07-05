@@ -8,8 +8,7 @@ import HostelManagement from "./HostelManagement";
 import FeeManagement from "./FeeManagement";
 import StudentsView from "./StudentsView";
 import AdminSettings from "./AdminSettings";
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+import api from "@/utils/api";
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -26,9 +25,8 @@ const AdminDashboard = () => {
       setLoading(true);
       setError("");
       try {
-        const res = await fetch(`${BACKEND_URL}/api/admin/dashboard-stats`);
-        if (!res.ok) throw new Error("Failed to fetch stats");
-        const data = await res.json();
+        const res = await api.get('/api/admin/dashboard-stats');
+        const data = await res.data;
         setStats(data);
       } catch (err) {
         setError((err as Error).message || "Unknown error");
