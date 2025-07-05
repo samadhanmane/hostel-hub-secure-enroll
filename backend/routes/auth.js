@@ -9,6 +9,14 @@ const router = express.Router();
 // Admin login
 router.post('/admin/login', async (req, res) => {
   const { email, password } = req.body;
+  
+  console.log('Admin login attempt:', { 
+    providedEmail: email, 
+    expectedEmail: process.env.ADMIN_EMAIL,
+    emailMatch: email === process.env.ADMIN_EMAIL,
+    passwordMatch: password === process.env.ADMIN_PASSWORD
+  });
+  
   if (email !== process.env.ADMIN_EMAIL) {
     return res.status(401).json({ message: 'Invalid admin credentials' });
   }
