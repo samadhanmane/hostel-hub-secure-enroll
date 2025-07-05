@@ -140,18 +140,14 @@ const EnrollmentForm = () => {
           roomTypesRes,
           categoriesRes,
           yearsRes,
-          departmentsRes,
-          feesRes,
-          settingsRes
+          departmentsRes
         ] = await Promise.all([
           axios.get(`${BACKEND_URL}/api/dropdowns/colleges`),
           axios.get(`${BACKEND_URL}/api/dropdowns/hostels`),
           axios.get(`${BACKEND_URL}/api/dropdowns/room-types`),
           axios.get(`${BACKEND_URL}/api/dropdowns/categories`),
           axios.get(`${BACKEND_URL}/api/dropdowns/years`),
-          axios.get(`${BACKEND_URL}/api/dropdowns/departments`),
-          axios.get(`${BACKEND_URL}/api/admin/fees`),
-          axios.get(`${BACKEND_URL}/api/admin/settings`)
+          axios.get(`${BACKEND_URL}/api/dropdowns/departments`)
         ]);
 
         console.log('Dropdown data received:', {
@@ -160,9 +156,7 @@ const EnrollmentForm = () => {
           roomTypes: roomTypesRes.data.length,
           categories: categoriesRes.data.length,
           years: yearsRes.data.length,
-          departments: departmentsRes.data.length,
-          fees: feesRes.data.length,
-          settings: settingsRes.data
+          departments: departmentsRes.data.length
         });
 
         setColleges(collegesRes.data);
@@ -171,8 +165,17 @@ const EnrollmentForm = () => {
         setCategories(categoriesRes.data);
         setYears(yearsRes.data);
         setDepartments(departmentsRes.data);
-        setFees(feesRes.data);
-        setSettings(settingsRes.data);
+        // Set default fees and settings since we can't access admin endpoints
+        setFees([]);
+        setSettings({
+          academicYears: yearsRes.data.map(y => y.name),
+          admissionYears: yearsRes.data.map(y => y.name),
+          branches: departmentsRes.data.map(d => d.name),
+          castes: categoriesRes.data.map(c => c.name),
+          hostelYears: yearsRes.data.map(y => y.name),
+          roomTypes: roomTypesRes.data.map(rt => rt.name),
+          installments: 2
+        });
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching dropdown data:', error);
@@ -199,10 +202,8 @@ const EnrollmentForm = () => {
     fetchDropdownData();
   }, []);
 
-  // Refetch fees from backend every time a key selection changes
-  useEffect(() => {
-    axios.get(`${BACKEND_URL}/api/admin/fees`).then(res => setFees(res.data)).catch(() => setFees([]));
-  }, [formData.hostelId, formData.roomType, formData.hostelYear, formData.caste, formData.studentType]);
+  // Note: Fees are not fetched for students as they require admin authentication
+  // Fee calculation will be handled on the payment page
 
   useEffect(() => {
     if (user?.email && !formData.email) {
@@ -413,16 +414,12 @@ const EnrollmentForm = () => {
                   <Label htmlFor="college">College Name *</Label>
                   <Select value={formData.collegeId} onValueChange={(value) => setFormData({...formData, collegeId: value, hostelId: ""})}>
                     <SelectTrigger>
-                      <SelectValue placeholder={colleges.length > 0 ? "Select college" : "No colleges available"} />
+                      <SelectValue placeholder="Select college" />
                     </SelectTrigger>
                     <SelectContent>
-                      {colleges.length > 0 ? (
-                        colleges.map(college => (
-                          <SelectItem key={college._id} value={college._id}>{college.name}</SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="" disabled>No colleges available</SelectItem>
-                      )}
+                      {colleges.map(college => (
+                        <SelectItem key={college._id} value={college._id}>{college.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -431,16 +428,12 @@ const EnrollmentForm = () => {
                   <Label htmlFor="yearOfAdmission">Year of Admission *</Label>
                   <Select value={formData.yearOfAdmission} onValueChange={(value) => setFormData({...formData, yearOfAdmission: value})}>
                     <SelectTrigger>
-                      <SelectValue placeholder={years.length > 0 ? "Select admission year" : "No years available"} />
+                      <SelectValue placeholder="Select admission year" />
                     </SelectTrigger>
                     <SelectContent>
-                      {years.length > 0 ? (
-                        years.map(year => (
-                          <SelectItem key={year._id} value={year.name}>{year.name}</SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="" disabled>No years available</SelectItem>
-                      )}
+                      {years.map(year => (
+                        <SelectItem key={year._id} value={year.name}>{year.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -449,16 +442,12 @@ const EnrollmentForm = () => {
                   <Label htmlFor="academicYear">Academic Year *</Label>
                   <Select value={formData.academicYear} onValueChange={(value) => setFormData({...formData, academicYear: value})}>
                     <SelectTrigger>
-                      <SelectValue placeholder={years.length > 0 ? "Select academic year" : "No years available"} />
+                      <SelectValue placeholder="Select academic year" />
                     </SelectTrigger>
                     <SelectContent>
-                      {years.length > 0 ? (
-                        years.map(year => (
-                          <SelectItem key={year._id} value={year.name}>{year.name}</SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="" disabled>No years available</SelectItem>
-                      )}
+                      {years.map(year => (
+                        <SelectItem key={year._id} value={year.name}>{year.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -467,16 +456,12 @@ const EnrollmentForm = () => {
                   <Label htmlFor="branch">Branch/Department *</Label>
                   <Select value={formData.branch} onValueChange={(value) => setFormData({...formData, branch: value})}>
                     <SelectTrigger>
-                      <SelectValue placeholder={departments.length > 0 ? "Select branch" : "No departments available"} />
+                      <SelectValue placeholder="Select branch" />
                     </SelectTrigger>
                     <SelectContent>
-                      {departments.length > 0 ? (
-                        departments.map(dept => (
-                          <SelectItem key={dept._id} value={dept.name}>{dept.name}</SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="" disabled>No departments available</SelectItem>
-                      )}
+                      {departments.map(dept => (
+                        <SelectItem key={dept._id} value={dept.name}>{dept.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -485,16 +470,12 @@ const EnrollmentForm = () => {
                   <Label htmlFor="caste">Caste/Category *</Label>
                   <Select value={formData.caste} onValueChange={(value) => setFormData({...formData, caste: value})}>
                     <SelectTrigger>
-                      <SelectValue placeholder={categories.length > 0 ? "Select category" : "No categories available"} />
+                      <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.length > 0 ? (
-                        categories.map(category => (
-                          <SelectItem key={category._id} value={category.name}>{category.name}</SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="" disabled>No categories available</SelectItem>
-                      )}
+                      {categories.map(category => (
+                        <SelectItem key={category._id} value={category.name}>{category.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -528,16 +509,12 @@ const EnrollmentForm = () => {
                   <Label htmlFor="hostel">Hostel Name *</Label>
                   <Select value={formData.hostelId} onValueChange={(value) => setFormData({...formData, hostelId: value})}>
                     <SelectTrigger>
-                      <SelectValue placeholder={filteredHostels.length > 0 ? "Select hostel" : "No hostels available"} />
+                      <SelectValue placeholder="Select hostel" />
                     </SelectTrigger>
                     <SelectContent>
-                      {filteredHostels.length > 0 ? (
-                        filteredHostels.map(hostel => (
-                          <SelectItem key={hostel._id} value={hostel._id}>{hostel.name}</SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="" disabled>No hostels available</SelectItem>
-                      )}
+                      {filteredHostels.map(hostel => (
+                        <SelectItem key={hostel._id} value={hostel._id}>{hostel.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -546,16 +523,12 @@ const EnrollmentForm = () => {
                   <Label htmlFor="roomType">Room Type *</Label>
                   <Select value={formData.roomType} onValueChange={(value) => setFormData({...formData, roomType: value})}>
                     <SelectTrigger>
-                      <SelectValue placeholder={roomTypes.length > 0 ? "Select room type" : "No room types available"} />
+                      <SelectValue placeholder="Select room type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {roomTypes.length > 0 ? (
-                        roomTypes.map(roomType => (
-                          <SelectItem key={roomType._id} value={roomType.name}>{roomType.name}</SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="" disabled>No room types available</SelectItem>
-                      )}
+                      {roomTypes.map(roomType => (
+                        <SelectItem key={roomType._id} value={roomType.name}>{roomType.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -564,16 +537,12 @@ const EnrollmentForm = () => {
                   <Label htmlFor="hostelYear">Hostel Year *</Label>
                   <Select value={formData.hostelYear} onValueChange={(value) => setFormData({...formData, hostelYear: value})}>
                     <SelectTrigger>
-                      <SelectValue placeholder={years.length > 0 ? "Select hostel year" : "No years available"} />
+                      <SelectValue placeholder="Select hostel year" />
                     </SelectTrigger>
                     <SelectContent>
-                      {years.length > 0 ? (
-                        years.map(year => (
-                          <SelectItem key={year._id} value={year.name}>{year.name}</SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="" disabled>No years available</SelectItem>
-                      )}
+                      {years.map(year => (
+                        <SelectItem key={year._id} value={year.name}>{year.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
