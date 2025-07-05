@@ -10,13 +10,6 @@ const router = express.Router();
 router.post('/admin/login', async (req, res) => {
   const { email, password } = req.body;
   
-  console.log('Admin login attempt:', { 
-    providedEmail: email, 
-    expectedEmail: process.env.ADMIN_EMAIL,
-    emailMatch: email === process.env.ADMIN_EMAIL,
-    passwordMatch: password === process.env.ADMIN_PASSWORD
-  });
-  
   if (email !== process.env.ADMIN_EMAIL) {
     return res.status(401).json({ message: 'Invalid admin credentials' });
   }
@@ -111,7 +104,6 @@ async function generateStudentId({ year, college, roomType, hostelName, hostelTy
     // Example: 2025FYMA2B0001, 2025FYMA2B0002, etc.
     const studentId = `${yearCode}${academicCode}${collegeCode}${roomCode}${hostelCode}${counter}`;
     
-    console.log('Generated Student ID:', studentId, 'for student count:', existingStudents + 1);
     return studentId;
   } catch (error) {
     console.error('Error generating student ID:', error);

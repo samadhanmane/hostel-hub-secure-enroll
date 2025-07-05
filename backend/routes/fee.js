@@ -56,7 +56,6 @@ async function generateStudentId({ year, college, roomType, hostelName, hostelTy
     // Example: 2025FYMA2B0001, 2025FYMA2B0002, etc.
     const studentId = `${yearCode}${academicCode}${collegeCode}${roomCode}${hostelCode}${counter}`;
     
-    console.log('Generated Student ID:', studentId, 'for student count:', existingStudents + 1);
     return studentId;
   } catch (error) {
     console.error('Error generating student ID:', error);
@@ -112,9 +111,6 @@ router.post('/pay', async (req, res) => {
   let user = await User.findOne({ email });
   if (!user) {
     try {
-      // Log all arguments before generating student ID
-      console.log('Creating new user for payment:', { email, hostelYear, academicYear, college, roomCapacity, hostelType });
-      
       // Provide default values if any are missing
       const safeHostelYear = hostelYear || '0000-0000';
       const safeAcademicYear = academicYear || 'Unknown';
@@ -160,17 +156,15 @@ router.post('/pay', async (req, res) => {
         password: 'notused', // placeholder
       });
       await user.save();
-      console.log('New user created successfully:', { email, studentId });
     } catch (error) {
       console.error('Error creating user during payment:', error);
       return res.status(500).json({ message: 'Failed to create user account', error: error.message });
     }
-  } else {
-    console.log('Existing user found for payment:', { email, studentId: user.studentId });
   }
   // Save payment
+  let payment;
   try {
-    const payment = new Payment({
+    payment = new Payment({
       userId: user._id,
       amount,
       status: 'success',
@@ -183,7 +177,6 @@ router.post('/pay', async (req, res) => {
       studentType,
     });
     await payment.save();
-    console.log('Payment saved successfully:', { paymentId: payment._id, amount, studentId: user.studentId });
 
     // Respond to frontend immediately
     res.json({ success: true, paymentId: payment._id, studentId: user.studentId, razorpayPaymentId });
@@ -195,8 +188,6 @@ router.post('/pay', async (req, res) => {
   // Generate and send receipt PDF via email in the background
   (async () => {
     try {
-      console.log('Starting email receipt generation for payment:', payment._id);
-      
       const receiptData = {
         paymentId: payment._id.toString(),
         razorpayPaymentId,
@@ -212,32 +203,19 @@ router.post('/pay', async (req, res) => {
         hostelYear,
       };
       
-      console.log('Generating PDF receipt...');
       const pdfBuffer = await generateReceiptPdf(receiptData);
-      console.log('PDF generated successfully, size:', pdfBuffer.length, 'bytes');
-      
       const subject = 'Hostel Hub Payment Receipt';
       const text = 'Thank you for your payment. Please find your receipt attached.';
       
       // Send to student
-      console.log('Sending receipt to student:', email);
       await sendReceiptEmail(email, subject, text, pdfBuffer, 'HostelHub_Receipt.pdf');
       
       // Send to admin if different from student
       if (process.env.RECEIPT_EMAIL && process.env.RECEIPT_EMAIL !== email) {
-        console.log('Sending receipt to admin:', process.env.RECEIPT_EMAIL);
         await sendReceiptEmail(process.env.RECEIPT_EMAIL, subject, `Receipt for student: ${email}`, pdfBuffer, 'HostelHub_Receipt.pdf');
       }
-      
-      console.log('All receipt emails sent successfully');
     } catch (err) {
-      console.error('Failed to send receipt email:', {
-        error: err.message,
-        stack: err.stack,
-        paymentId: payment._id,
-        studentEmail: email
-      });
-      // Don't throw error here as payment is already successful
+      console.error('Failed to send receipt email:', err.message);
     }
   })();
 });
@@ -245,10 +223,6 @@ router.post('/pay', async (req, res) => {
 // Create Razorpay order
 router.post('/create-order', async (req, res) => {
   const { amount, currency = 'INR', receipt } = req.body;
-  console.log('--- /api/fee/create-order called ---');
-  console.log('RAZORPAY_KEY_ID:', process.env.RAZORPAY_KEY_ID);
-  console.log('RAZORPAY_KEY_SECRET:', process.env.RAZORPAY_KEY_SECRET ? '***set***' : '***missing***');
-  console.log('Request body:', req.body);
   try {
     let safeReceipt = receipt;
     if (safeReceipt.length > 40) safeReceipt = safeReceipt.slice(0, 40);
@@ -257,13 +231,11 @@ router.post('/create-order', async (req, res) => {
       currency,
       receipt: safeReceipt,
     };
-    console.log('Creating Razorpay order with options:', options);
     const order = await razorpay.orders.create(options);
-    console.log('Razorpay order created:', order);
     res.json(order);
   } catch (err) {
     console.error('Error creating Razorpay order:', err);
-    res.status(500).json({ error: err.message, stack: err.stack });
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -285,9 +257,6 @@ router.get('/remaining-fee', async (req, res) => {
   const hostelName = req.query.hostelName || user.hostelName;
   const studentType = req.query.studentType || user.studentType;
 
-  // Log the fields used for the fee query
-  console.log('Fee lookup fields:', { hostelYear, roomType, category, hostelName, studentType });
-
   // Find the fee structure for this user (case-insensitive)
   const fee = await Fee.findOne({
     hostelYear: new RegExp(`^${hostelYear}$`, 'i'),
@@ -296,7 +265,6 @@ router.get('/remaining-fee', async (req, res) => {
     hostelName: new RegExp(`^${hostelName}$`, 'i'),
     studentType: new RegExp(`^${studentType}$`, 'i'),
   });
-  console.log('Fee found:', fee);
   if (!fee) return res.status(404).json({ message: 'Fee structure not found' });
 
   // Only sum payments for this structure
@@ -331,11 +299,6 @@ router.get('/payment-history', async (req, res) => {
 // Test email configuration
 router.get('/test-email', async (req, res) => {
   try {
-    console.log('Testing email configuration...');
-    console.log('EMAIL_USER:', process.env.EMAIL_USER ? 'set' : 'missing');
-    console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? 'set' : 'missing');
-    console.log('RECEIPT_EMAIL:', process.env.RECEIPT_EMAIL || 'not set');
-    
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
       return res.status(500).json({ 
         message: 'Email configuration missing',
