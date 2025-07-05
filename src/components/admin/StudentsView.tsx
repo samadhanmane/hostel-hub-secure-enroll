@@ -140,9 +140,9 @@ const StudentsView = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Enrolled Students</span>
+      <CardHeader className="px-4 md:px-6">
+        <CardTitle className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-2 md:space-y-0">
+          <span className="text-lg md:text-xl">Enrolled Students</span>
           <div className="flex items-center space-x-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -150,11 +150,11 @@ const StudentsView = () => {
                   variant="outline" 
                   size="sm" 
                   disabled={isExporting}
-                  className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                  className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 text-xs md:text-sm"
                 >
-                  <FileSpreadsheet className="w-4 h-4 mr-2" />
-                  {isExporting ? 'Exporting...' : 'Export Data'}
-                  <ChevronDown className="w-4 h-4 ml-2" />
+                  <FileSpreadsheet className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                  {isExporting ? 'Exporting...' : 'Export'}
+                  <ChevronDown className="w-3 h-3 md:w-4 md:h-4 ml-1 md:ml-2" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -170,14 +170,14 @@ const StudentsView = () => {
             </DropdownMenu>
           </div>
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-sm md:text-base">
           View and manage all enrolled students
         </CardDescription>
       </CardHeader>
       
-      <CardContent>
-        <div className="mb-6">
-          <Label htmlFor="search">Search Students</Label>
+      <CardContent className="px-4 md:px-6">
+        <div className="mb-4 md:mb-6">
+          <Label htmlFor="search" className="text-sm md:text-base">Search Students</Label>
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
@@ -185,12 +185,13 @@ const StudentsView = () => {
               placeholder="Search by name, email, or student ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 text-sm md:text-base"
             />
           </div>
         </div>
 
-        <div className="rounded-md border">
+        {/* Desktop Table View */}
+        <div className="hidden md:block rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -248,8 +249,53 @@ const StudentsView = () => {
           </Table>
         </div>
 
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-3">
+          {filteredStudents.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              {students.length === 0 ? "No students enrolled yet" : "No students found matching your search"}
+            </div>
+          ) : (
+            filteredStudents.map((student) => (
+              <div key={student.studentId} className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="font-mono text-sm text-muted-foreground">{student.studentId}</div>
+                  <div className="flex space-x-1">
+                    <Button variant="ghost" size="sm" onClick={() => handleView(student)}>
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(student)}>
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <div>
+                    <span className="font-medium text-sm">{student.name}</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">{student.email}</div>
+                  <div className="text-sm">{student.college}</div>
+                  <div className="text-sm">Year: {student.year}</div>
+                  <div className="text-sm">Hostel: {student.hostelName}</div>
+                  <div className="text-sm">Room: {student.roomType}</div>
+                </div>
+                
+                <div className="flex space-x-2">
+                  <Badge className={getHostelTypeColor(student.hostelType)}>
+                    {student.hostelType}
+                  </Badge>
+                  <Badge className={getStudentTypeColor(student.studentType)}>
+                    {student.studentType}
+                  </Badge>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
         {filteredStudents.length > 0 && (
-          <div className="mt-4 text-sm text-muted-foreground">
+          <div className="mt-4 text-xs md:text-sm text-muted-foreground">
             Showing {filteredStudents.length} of {students.length} students
           </div>
         )}

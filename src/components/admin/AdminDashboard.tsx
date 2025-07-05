@@ -38,10 +38,10 @@ const AdminDashboard = () => {
   }, []);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Manage hostel enrollments and configurations</p>
+    <div className="container mx-auto px-4 py-4 md:py-8">
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold">Admin Dashboard</h1>
+        <p className="text-sm md:text-base text-muted-foreground">Manage hostel enrollments and configurations</p>
       </div>
 
       {loading ? (
@@ -49,47 +49,47 @@ const AdminDashboard = () => {
       ) : error ? (
         <div className="mb-8 text-center text-red-500">{error}</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs md:text-sm font-medium">Total Students</CardTitle>
+              <Users className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalStudents}</div>
+              <div className="text-lg md:text-2xl font-bold">{stats.totalStudents}</div>
               <p className="text-xs text-muted-foreground">+12% from last month</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Colleges</CardTitle>
-              <Building className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs md:text-sm font-medium">Colleges</CardTitle>
+              <Building className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalColleges}</div>
+              <div className="text-lg md:text-2xl font-bold">{stats.totalColleges}</div>
               <p className="text-xs text-muted-foreground">Active colleges</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Hostels</CardTitle>
-              <Bed className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs md:text-sm font-medium">Hostels</CardTitle>
+              <Bed className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalHostels}</div>
+              <div className="text-lg md:text-2xl font-bold">{stats.totalHostels}</div>
               <p className="text-xs text-muted-foreground">Across all colleges</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs md:text-sm font-medium">Total Revenue</CardTitle>
+              <DollarSign className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-lg md:text-2xl font-bold">
                 ₹{stats.totalRevenue >= 100000
                   ? (stats.totalRevenue / 100000).toFixed(2) + 'L'
                   : stats.totalRevenue.toLocaleString()}
@@ -101,26 +101,26 @@ const AdminDashboard = () => {
       )}
 
       {/* Main Admin Interface */}
-      <Tabs defaultValue="students" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="students" className="flex items-center space-x-1">
-            <Users className="w-4 h-4" />
+      <Tabs defaultValue="students" className="space-y-4 md:space-y-6">
+        <TabsList className="grid w-full grid-cols-5 h-auto md:h-10">
+          <TabsTrigger value="students" className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-1 py-2 md:py-0 text-xs md:text-sm">
+            <Users className="w-3 h-3 md:w-4 md:h-4" />
             <span>Students</span>
           </TabsTrigger>
-          <TabsTrigger value="colleges" className="flex items-center space-x-1">
-            <Building className="w-4 h-4" />
+          <TabsTrigger value="colleges" className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-1 py-2 md:py-0 text-xs md:text-sm">
+            <Building className="w-3 h-3 md:w-4 md:h-4" />
             <span>Colleges</span>
           </TabsTrigger>
-          <TabsTrigger value="hostels" className="flex items-center space-x-1">
-            <Bed className="w-4 h-4" />
+          <TabsTrigger value="hostels" className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-1 py-2 md:py-0 text-xs md:text-sm">
+            <Bed className="w-3 h-3 md:w-4 md:h-4" />
             <span>Hostels</span>
           </TabsTrigger>
-          <TabsTrigger value="fees" className="flex items-center space-x-1">
-            <DollarSign className="w-4 h-4" />
+          <TabsTrigger value="fees" className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-1 py-2 md:py-0 text-xs md:text-sm">
+            <DollarSign className="w-3 h-3 md:w-4 md:h-4" />
             <span>Fees</span>
           </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center space-x-1">
-            <Settings className="w-4 h-4" />
+          <TabsTrigger value="settings" className="flex flex-col md:flex-row items-center space-y-1 md:space-y-0 md:space-x-1 py-2 md:py-0 text-xs md:text-sm">
+            <Settings className="w-3 h-3 md:w-4 md:h-4" />
             <span>Settings</span>
           </TabsTrigger>
         </TabsList>
